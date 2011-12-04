@@ -46,7 +46,13 @@ public class ControllerServlet extends Servlet {
   }
   
   public static User getCurrentUser(HttpServletRequest request) {
-    return (User) request.getSession().getAttribute("CURRENT_USER");
+	  if(request.getParameter("k") != null) {
+		  User user = User.load(request.getParameter("k"));
+		  if(user != null) {
+			  return user;
+		  }
+	  }
+	  return null;
   }
 
 
