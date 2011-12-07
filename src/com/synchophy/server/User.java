@@ -65,8 +65,7 @@ public class User {
 		if (rows.size() != 1) {
 			throw new UserAuthException("Unable to register user.");
 		}
-		Map row = (Map) rows.get(0);
-		return new User(((Long) row.get("name")).longValue(), username);
+		return login(username, password);
 	}
 
 	public static boolean isUsernameUnique(String username) {

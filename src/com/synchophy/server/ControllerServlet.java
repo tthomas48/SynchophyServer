@@ -73,6 +73,7 @@ public class ControllerServlet extends Servlet {
   public void shutdown() {
 
     DatabaseManager.getInstance().shutdown();
+    PlayerManager.getInstance().shutdown();
   }
 
 

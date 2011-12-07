@@ -25,6 +25,7 @@ public abstract class AbstractDispatch {
     } catch (RuntimeException e) {
       e.printStackTrace();
       output = new HashMap();
+      response.setStatus(500);
       ((HashMap) output).put("error", e.getMessage());
     }
 

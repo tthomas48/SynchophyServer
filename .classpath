@@ -12,5 +12,6 @@
 	<classpathentry kind="lib" path="lib/isoviewer-1.1.jar"/>
 	<classpathentry kind="lib" path="lib/junit-4.10.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.5.jar"/>
+	<classpathentry kind="lib" path="lib/jlme0.1.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

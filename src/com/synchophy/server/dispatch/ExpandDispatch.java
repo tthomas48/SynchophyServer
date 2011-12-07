@@ -33,8 +33,18 @@ public class ExpandDispatch extends AbstractDispatch {
 
   }
 
+  private String getFilter() {
+    return "  and coalesce(ss.stick, 0) >= 0 ";
+  }
 
   private Object expandAlbums(String value, String artist) {
+
+    String[] params = new String[] {value, artist};
+    String artistFilter = "  and s.artist_sort = ? ";
+    if(artist == null || artist.equals("")) {
+      artistFilter = "";
+      params = new String[] {value};
+    }
 
     // returns tracks
     return DatabaseManager.getInstance()
@@ -43,12 +53,11 @@ public class ExpandDispatch extends AbstractDispatch {
                    + "  and (s.artist = ss.artist or ss.artist = '*') "
                    + "  and (s.title = ss.name or ss.name = '*')) "
                    + " where s.album_sort = ? "
-                   + "  and s.artist_sort = ? "
+                   + artistFilter
+                   + getFilter()
                    + " group by s.title_sort, s.artist_sort, s.album_sort, coalesce(ss.stick, 0)  "
                    + " order by upper(s.title_sort)",
-               new String[]{
-                   value, artist
-               },
+               params,
                new String[]{
                    "name", "artist", "album", "sticky"
                });
@@ -64,6 +73,7 @@ public class ExpandDispatch extends AbstractDispatch {
                    + "  and (s.artist = ss.artist or ss.artist = '*') "
                    + "  and (s.title = ss.name or ss.name = '*')) "
                    + "where s.artist_sort = ? "
+                   + getFilter()
                    + "group by s.album_sort, s.artist_sort, coalesce(ss.stick, 0) "
                    + "order by upper(s.album_sort)",
                new String[]{
@@ -83,6 +93,7 @@ public class ExpandDispatch extends AbstractDispatch {
                    + "  and (s.artist = ss.artist or ss.artist = '*') "
                    + "  and (s.title = ss.name or ss.name = '*')) "
                    + "where s.artist_key = ? "
+                   + getFilter()
                    + "group by s.artist_sort, coalesce(ss.stick, 0) "
                    + "order by upper(s.artist_sort)",
                new String[]{
@@ -97,12 +108,13 @@ public class ExpandDispatch extends AbstractDispatch {
   private Object expandAlbumsLetter(String value) {
 
     return DatabaseManager.getInstance()
-        .query("select album_sort, artist_sort, coalesce(ss.stick, 0) "
+        .query("select album_sort, '', coalesce(ss.stick, 0) "
                    + "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
                    + "  and (s.artist = ss.artist or ss.artist = '*') "
                    + "  and (s.title = ss.name or ss.name = '*')) "
-                   + "where album_key = ? "
-                   + "group by album_sort, artist_sort, coalesce(ss.stick, 0) "
+                   + "where album_key = ? " 
+                   + getFilter()
+                   + "group by album_sort, coalesce(ss.stick, 0) "
                    + "order by upper(album_sort)",
                new String[]{
                  value

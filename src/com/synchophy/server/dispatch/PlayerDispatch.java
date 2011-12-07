@@ -1,0 +1,52 @@
+package com.synchophy.server.dispatch;
+
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.synchophy.server.PlayerManager;
+
+
+public class PlayerDispatch extends AbstractDispatch {
+
+  public Object execute(HttpServletRequest request, HttpServletResponse response)
+      throws IOException {
+
+    String action = getRequiredParameter(request, "a");
+    if(action.equals("play")) {
+      PlayerManager.getInstance().play();
+    }
+    else if(action.equals("stop")) {
+      PlayerManager.getInstance().stop();
+    }
+    else if(action.equals("next")) {
+      PlayerManager.getInstance().next();
+    }
+    else if(action.equals("previous")) {
+      PlayerManager.getInstance().previous();
+    }
+    else if(action.equals("first")) {
+      PlayerManager.getInstance().first();
+    }
+    else if(action.equals("last")) {
+      PlayerManager.getInstance().last();
+    }
+    else if(action.equals("select")) {
+      int index = Integer.parseInt(getRequiredParameter(request, "i"));
+      PlayerManager.getInstance().select(index);
+    }
+    return getStatus();
+  }
+  
+  private Map getStatus() {
+    Map status = new HashMap();
+    status.put("current", PlayerManager.getInstance().getCurrentSong());
+    status.put("playing", PlayerManager.getInstance().isPlaying());
+    status.put("position", PlayerManager.getInstance().getPosition());
+    return status;    
+  }
+}

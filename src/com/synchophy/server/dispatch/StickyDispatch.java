@@ -18,15 +18,10 @@ public class StickyDispatch extends AbstractDispatch {
 
     String name = getRequiredParameter(request, "n");
     String album = getRequiredParameter(request, "album");
-    String artist = getOptionalParameter(request, "artist");
+    String artist = getRequiredParameter(request, "artist");
     String type = getRequiredParameter(request, "t");
     String sticky = getRequiredParameter(request, "s");
-    String view = getRequiredParameter(request, "v");
 
-    if (view.equals("albums") && "album".equals(type)) {
-      artist = "*";
-    }
-    
     User user = ControllerServlet.getCurrentUser(request);
 
     DatabaseManager.getInstance()

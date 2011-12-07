@@ -10,17 +10,29 @@ public class HttpServer {
 
   public static void main(String[] args) throws Exception {
 
-    ControllerServlet controller = null;
-    try {
-      controller = new ControllerServlet();
+    final ControllerServlet controller = new ControllerServlet();
+    final Server server = new Server(8080);
+    Runtime.getRuntime().addShutdownHook(new Thread() {
 
-      Server server = new Server(8080);
+      public void run() {
 
-      Context root = new Context(server, "/", Context.SESSIONS);
-      root.addServlet(new ServletHolder(new ControllerServlet()), "/*");
-      server.start();
-    } finally {
-      controller.shutdown();
-    }
+        try {
+        controller.shutdown();
+        server.stop();
+        } catch(Exception e) {
+          e.printStackTrace();
+        }
+      };
+
+    });
+
+    
+
+    // start our player thread
+    PlayerManager.getInstance();
+    
+    Context root = new Context(server, "/", Context.SESSIONS);
+    root.addServlet(new ServletHolder(new ControllerServlet()), "/*");
+    server.start();
   }
 }

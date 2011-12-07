@@ -5,6 +5,9 @@ import java.io.File;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.farng.mp3.MP3File;
 import org.farng.mp3.id3.AbstractID3v2;
@@ -22,6 +25,7 @@ public class FileScanner {
   private PreparedStatement sth;
   private PreparedStatement errorSth;
   private int batchSize = 0;
+  private int errorBatchSize = 0;
 
 
   public FileScanner(String basePath) {
@@ -46,6 +50,7 @@ public class FileScanner {
     scan(new File(this.basePath));
 
     executeBatch();
+    executeErrorBatch();
     DatabaseManager.getInstance()
         .executeQuery("merge into song using (select file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key, size from import) as vals(file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key, size)"
                       + " on song.file = vals.file"
@@ -66,6 +71,24 @@ public class FileScanner {
                       + " when not matched then insert values(null, vals.file, vals.message)");
     DatabaseManager.getInstance().executeQuery("delete from import");
     DatabaseManager.getInstance().executeQuery("delete from import_error");
+    
+    cleanup();
+  }
+
+
+  private void cleanup() {
+
+    List files = DatabaseManager.getInstance().query("select file from song", new Object[0], new String[] {"song"});
+    Iterator iterator = files.iterator();
+    while (iterator.hasNext()) {
+      String filename = (String) ((Map) iterator.next()).get("song");
+      if (new File(filename).exists() == false) {
+        DatabaseManager.getInstance().executeQuery("delete from song where file = ?", new Object[]{
+          filename
+        });
+      }
+    }
+
   }
 
 
@@ -183,7 +206,12 @@ public class FileScanner {
       // :file, :track, :artist, :album, :title, :size
       errorSth.setString(1, file.getAbsolutePath());
       errorSth.setString(2, message);
-      errorSth.execute();
+      errorSth.addBatch();
+      errorBatchSize++;
+      if (errorBatchSize > MAX_BATCH_SIZE) {
+        executeErrorBatch();
+      }
+      
     } catch (SQLException e) {
       e.printStackTrace();
     }
@@ -199,6 +227,17 @@ public class FileScanner {
       e.printStackTrace();
     }
   }
+  
+  private void executeErrorBatch() {
+
+    try {
+      errorBatchSize = 0;
+      errorSth.executeBatch();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+  }
+  
 
 
   public static void main(String[] args) {
