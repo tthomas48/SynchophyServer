@@ -1,0 +1,10 @@
+----------------------------------------------------------------
+Sun Dec 11 17:43:26 GMT-06:00 2011:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.8.2.2 - (1181258): instance c013800d-0134-2f82-76aa-000000128f58 
+on database directory /home/tthomas/workspace/synchophyserver/synchophy  with class loader sun.misc.Launcher$AppClassLoader@1813fac 
+Loaded from file:/home/tthomas/workspace/synchophyserver/lib/derby.jar
+java.vendor=Sun Microsystems Inc.
+java.runtime.version=1.4.2_19-b04
+user.dir=/home/tthomas/workspace/synchophyserver
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

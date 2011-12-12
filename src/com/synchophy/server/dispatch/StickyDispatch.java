@@ -19,20 +19,19 @@ public class StickyDispatch extends AbstractDispatch {
     String name = getRequiredParameter(request, "n");
     String album = getRequiredParameter(request, "album");
     String artist = getRequiredParameter(request, "artist");
-    String type = getRequiredParameter(request, "t");
     String sticky = getRequiredParameter(request, "s");
 
     User user = ControllerServlet.getCurrentUser(request);
 
     DatabaseManager.getInstance()
-        .executeQuery("DELETE FROM sticky WHERE name = ? and type = ? and user_id = ? and artist = ? and album = ?",
+        .executeQuery("DELETE FROM sticky WHERE name = ? and user_id = ? and artist = ? and album = ?",
                       new Object[]{
-                          name, type, new Long(user.getId()), artist, album
+                          name, new Long(user.getId()), artist, album
                       });
     DatabaseManager.getInstance()
-    .executeQuery("INSET INTO sticky (id, name, type, stick, user, artist, album) values (null, ?, ?, ?, ?, ?, ?)",
+    .executeQuery("INSERT INTO sticky (id, name, stick, user_id, artist, album) values (null, ?, ?, ?, ?, ?)",
                   new Object[]{
-                      name, type, sticky, new Long(user.getId()), artist, album
+                      name, sticky, new Long(user.getId()), artist, album
                   });
     return Boolean.TRUE;
   }

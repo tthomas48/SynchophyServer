@@ -1,6 +1,5 @@
 package com.synchophy.server;
 
-
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -20,285 +19,256 @@ import javazoom.jlme.decoder.SampleBuffer;
 
 import com.synchophy.server.db.DatabaseManager;
 
-
 public class PlayerManager {
 
-  private final Object lock = new Object();
-  private static PlayerManager instance;
-  private SourceDataLine line;
-  private boolean running;
-  private boolean playable;
-  private boolean done;
-  private Thread playThread;
-  private int position;
+	private final Object lock = new Object();
+	private static PlayerManager instance;
+	private SourceDataLine line;
+	private boolean running;
+	private boolean playable;
+	private boolean done;
+	private Thread playThread;
+	private int position;
 
+	private PlayerManager() {
 
-  private PlayerManager() {
+		init();
+	}
 
-    init();
-  }
+	private void init() {
 
+		position = 0;
+		running = true;
+		playThread = new Thread("PlayThread") {
 
-  private void init() {
+			public void run() {
 
-    position = 0;
-    running = true;
-    playThread = new Thread("PlayThread") {
+				while (running) {
+					synchronized (lock) {
+						try {
+							lock.wait();
+						} catch (Exception e) {
+							running = false;
+						}
+					}
+					playList();
+				}
+			}
+		};
+		playThread.start();
+	}
 
-      public void run() {
+	public static synchronized PlayerManager getInstance() {
 
-        while (running) {
-          synchronized (lock) {
-            try {
-              lock.wait();
-              playList();
-            } catch (Exception e) {
-              running = false;
-            }
-          }
+		if (instance == null) {
+			instance = new PlayerManager();
+		}
+		return instance;
+	}
 
-        }
-      }
-    };
-    playThread.start();
-  }
+	private BitStream getNextBitStream() {
 
+		List queue = DatabaseManager.getInstance().loadQueueFiles();
+		try {
+			if (queue.size() > position) {
+				String filename = (String) ((Map) queue.get(position))
+						.get("file");
+				return new BitStream(new BufferedInputStream(
+						new FileInputStream(filename), 2048));
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 
-  public static synchronized PlayerManager getInstance() {
+	public void next() {
 
-    if (instance == null) {
-      instance = new PlayerManager();
-    }
-    return instance;
-  }
+		position++;
+		List queue = DatabaseManager.getInstance().loadQueueFiles();
+		if (position > queue.size() - 1) {
+			position = queue.size() - 1;
+		}
+	}
 
+	public void previous() {
 
-  private BitStream getNextBitStream() {
+		position--;
+		if (position < 0) {
+			position = 0;
+		}
+	}
 
-    List queue = DatabaseManager.getInstance().loadQueueFiles();
-    try {
-      if (queue.size() > position) {
-        String filename = (String) ((Map) queue.get(position)).get("file");
-        return new BitStream(new BufferedInputStream(new FileInputStream(filename), 2048));
-      }
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
-    return null;
-  }
+	public void first() {
 
+		position = 0;
+	}
 
-  public void next() {
+	public void last() {
 
-    playable = false;
-    position++;
-    List queue = DatabaseManager.getInstance().loadQueueFiles();
-    if (position > queue.size() - 1) {
-      position = queue.size() - 1;
-    }
-    waitToFinish();
-    play();
-  }
+		List queue = DatabaseManager.getInstance().loadQueueFiles();
+		position = queue.size() - 1;
+	}
 
+	public void select(int index) {
 
-  public void previous() {
+		List queue = DatabaseManager.getInstance().loadQueueFiles();
+		position = index;
+		if (position < 0) {
+			position = 0;
+		}
+		if (position > queue.size() - 1) {
+			position = queue.size() - 1;
+		}
+	}
 
-    playable = false;
-    position--;
-    if (position < 0) {
-      position = 0;
-    }
-    waitToFinish();
-    play();
-  }
+	private void playList() {
 
+		done = false;
+		try {
+			playable = true;
+			while (playable) {
+				boolean first = true;
+				int length;
+				int currentPosition = position;
+				BitStream bitstream = getNextBitStream();
+				if (bitstream == null) {
+					playable = false;
+					continue;
+				}
+				Header header = bitstream.readFrame();
+				Decoder decoder = new Decoder(header, bitstream);
+				while (playable) {
+					try {
+						if (currentPosition != position) {
+							// song has changed, break and get the next song
+							break;
+						}
+						SampleBuffer output = (SampleBuffer) decoder
+								.decodeFrame();
+						length = output.size();
+						if (length == 0) {
+							// only advance if we actually finish the song
+							position++;
+							break;
+						}
+						// {
+						if (first) {
+							first = false;
+							startOutput(new AudioFormat(
+									decoder.getOutputFrequency(), 16,
+									decoder.getOutputChannels(), true, false));
+						}
+						line.write(output.getBuffer(), 0, length);
+						bitstream.closeFrame();
+						header = bitstream.readFrame();
+					} catch (Exception e) {
+						// e.printStackTrace();
+						break;
+					}
+				}
+				bitstream.close();
+				if (line != null) {
+					line.drain();
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		playable = false;
+		stopOutput();
+		done = true;
+	}
 
-  public void first() {
+	public void startOutput(AudioFormat playFormat)
+			throws LineUnavailableException {
 
-    playable = false;
-    position = 0;
-    waitToFinish();
-    play();
-  }
+		DataLine.Info info = new DataLine.Info(SourceDataLine.class, playFormat);
 
+		if (!AudioSystem.isLineSupported(info)) {
+			throw new LineUnavailableException("Cannot play sound format.");
+		}
+		line = (SourceDataLine) AudioSystem.getLine(info);
+		line.open(playFormat);
+		line.start();
+	}
 
-  public void last() {
+	private void stopOutput() {
 
-    playable = false;
-    List queue = DatabaseManager.getInstance().loadQueueFiles();
-    position = queue.size() - 1;
-    waitToFinish();
-    play();
-  }
+		if (line != null) {
+			line.drain();
+			line.stop();
+			line.close();
+			line = null;
+		}
+	}
 
+	public void play() {
 
-  public void select(int index) {
+		synchronized (lock) {
+			lock.notify();
+		}
+	}
 
-    playable = false;
-    List queue = DatabaseManager.getInstance().loadQueueFiles();
-    position = index;
-    if (position < 0) {
-      position = 0;
-    }
-    if (position > queue.size() - 1) {
-      position = queue.size() - 1;
-    }
-    waitToFinish();
-    play();
-  }
+	public void stop() {
 
+		playable = false;
+	}
 
-  private void playList() {
+	public void shutdown() {
 
-    done = false;
-    try {
-      playable = true;
-      while (playable) {
-        boolean first = true;
-        int length;
-        BitStream bitstream = getNextBitStream();
-        if (bitstream == null) {
-          playable = false;
-          continue;
-        }
-        Header header = bitstream.readFrame();
-        Decoder decoder = new Decoder(header, bitstream);
-        while (playable) {
-          try {
-            SampleBuffer output = (SampleBuffer) decoder.decodeFrame();
-            length = output.size();
-            if (length == 0) {
-              // only advance if we actually finish the song
-              position++;
-              break;
-            }
-            // {
-            if (first) {
-              first = false;
-              startOutput(new AudioFormat(decoder.getOutputFrequency(), 16,
-                  decoder.getOutputChannels(), true, false));
-            }
-            line.write(output.getBuffer(), 0, length);
-            bitstream.closeFrame();
-            header = bitstream.readFrame();
-          } catch (Exception e) {
-            // e.printStackTrace();
-            break;
-          }
-        }
-        bitstream.close();
-        if (line != null) {
-          line.drain();
-        }
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    playable = false;
-    stopOutput();
-    done = true;
-  }
+		playable = false;
+		running = false;
+		if (playThread != null) {
+			try {
+				synchronized (lock) {
+					lock.notify();
+				}
+				playThread.join();
+			} catch (InterruptedException e) {
 
+			}
+		}
+		waitToFinish();
+	}
 
-  public void startOutput(AudioFormat playFormat) throws LineUnavailableException {
+	private void waitToFinish() {
 
-    DataLine.Info info = new DataLine.Info(SourceDataLine.class, playFormat);
+		while (!done) {
+			try {
+				Thread.sleep(5);
+			} catch (InterruptedException e) {
+			}
+		}
 
-    if (!AudioSystem.isLineSupported(info)) {
-      throw new LineUnavailableException("Cannot play sound format.");
-    }
-    line = (SourceDataLine) AudioSystem.getLine(info);
-    line.open(playFormat);
-    line.start();
-  }
+	}
 
+	public Map getCurrentSong() {
 
-  private void stopOutput() {
+		List queue = DatabaseManager.getInstance().loadQueueFiles();
+		if (position >= queue.size() - 1) {
+			return null;
+		}
+		String song = (String) ((Map) queue.get(position)).get("file");
+		List list = DatabaseManager
+				.getInstance()
+				.query("select trim(LEADING '0' FROM title_sort), artist_sort, album_sort from song where file = ?",
+						new Object[] { song },
+						new String[] { "name", "artist", "album" });
+		if (list.size() > 0) {
+			return (Map) list.get(0);
+		}
+		return null;
+	}
 
-    if (line != null) {
-      line.drain();
-      line.stop();
-      line.close();
-      line = null;
-    }
-  }
+	public Boolean isPlaying() {
 
+		return Boolean.valueOf(playable);
+	}
 
-  public void play() {
+	public Integer getPosition() {
 
-    synchronized (lock) {
-      lock.notify();
-    }
-  }
-
-
-  public void stop() {
-
-    playable = false;
-  }
-
-
-  public void shutdown() {
-
-    playable = false;
-    running = false;
-    if (playThread != null) {
-      try {
-        synchronized (lock) {
-          lock.notify();
-        }
-        playThread.join();
-      } catch (InterruptedException e) {
-
-      }
-    }
-    waitToFinish();
-  }
-
-
-  private void waitToFinish() {
-
-    while (!done) {
-      try {
-        Thread.sleep(5);
-      } catch (InterruptedException e) {
-      }
-    }
-    
-  }
-
-
-  public Map getCurrentSong() {
-
-    List queue = DatabaseManager.getInstance().loadQueueFiles();
-    if (position >= queue.size() - 1) {
-      return null;
-    }
-    String song = (String) ((Map) queue.get(position)).get("file");
-    List list = DatabaseManager.getInstance()
-        .query("select trim(LEADING '0' FROM title_sort), artist_sort, album_sort from song where file = ?",
-               new Object[]{
-                 song
-               },
-               new String[]{
-                   "name", "artist", "album"
-               });
-    if (list.size() > 0) {
-      return (Map) list.get(0);
-    }
-    return null;
-  }
-
-
-  public Boolean isPlaying() {
-
-    return Boolean.valueOf(playable);
-  }
-
-
-  public Integer getPosition() {
-
-    return Integer.valueOf(position);
-  }
+		return new Integer(position);
+	}
 
 }

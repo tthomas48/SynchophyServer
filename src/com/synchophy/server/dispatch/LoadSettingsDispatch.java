@@ -18,7 +18,7 @@ public class LoadSettingsDispatch extends AbstractDispatch {
 
     User user = ControllerServlet.getCurrentUser(request);
 
-    return DatabaseManager.getInstance().query("select key, value from settings where user_id = ?",
+    return DatabaseManager.getInstance().query("select key_name, value from settings where user_id = ?",
                                                new Object[]{
                                                  new Long(user.getId())
 

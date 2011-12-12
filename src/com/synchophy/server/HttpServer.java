@@ -1,38 +1,39 @@
 package com.synchophy.server;
 
-
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 
+import com.synchophy.server.db.DatabaseManager;
 
 public class HttpServer {
 
-  public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
 
-    final ControllerServlet controller = new ControllerServlet();
-    final Server server = new Server(8080);
-    Runtime.getRuntime().addShutdownHook(new Thread() {
+		final ControllerServlet controller = new ControllerServlet();
+		final Server server = new Server(8080);
+		Runtime.getRuntime().addShutdownHook(new Thread() {
 
-      public void run() {
+			public void run() {
 
-        try {
-        controller.shutdown();
-        server.stop();
-        } catch(Exception e) {
-          e.printStackTrace();
-        }
-      };
+				try {
+					controller.shutdown();
+					server.stop();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			};
 
-    });
+		});
+		if (args.length > 0 && args[0].equals("init")) {
+			DatabaseManager.getInstance().initTables();
+		}
 
-    
+		// start our player thread
+		PlayerManager.getInstance();
 
-    // start our player thread
-    PlayerManager.getInstance();
-    
-    Context root = new Context(server, "/", Context.SESSIONS);
-    root.addServlet(new ServletHolder(new ControllerServlet()), "/*");
-    server.start();
-  }
+		Context root = new Context(server, "/", Context.SESSIONS);
+		root.addServlet(new ServletHolder(new ControllerServlet()), "/*");
+		server.start();
+	}
 }

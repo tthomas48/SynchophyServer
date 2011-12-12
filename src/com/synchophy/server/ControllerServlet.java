@@ -4,17 +4,16 @@ package com.synchophy.server;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.hsqldb.server.Servlet;
 
 import com.synchophy.server.db.DatabaseManager;
 import com.synchophy.server.dispatch.AbstractDispatch;
 
 
-public class ControllerServlet extends Servlet {
-
+public class ControllerServlet extends HttpServlet {
+ 
   public void doGet(HttpServletRequest request, HttpServletResponse response)
       throws IOException,
         ServletException {
@@ -98,4 +97,6 @@ public class ControllerServlet extends Servlet {
     }
     return null;
   }
+  
+
 }

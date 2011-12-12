@@ -21,12 +21,12 @@ public class SaveSettingsDispatch extends AbstractDispatch {
     String value = getRequiredParameter(request, "v");
 
     DatabaseManager.getInstance()
-        .executeQuery("delete from settings where user_id = ? and key = ?", new Object[]{
+        .executeQuery("delete from settings where user_id = ? and key_name = ?", new Object[]{
             new Long(user.getId()), key
         });
 
     DatabaseManager.getInstance()
-        .executeQuery("insert into settings (key, value, user_id) values (?, ?, ?)", new Object[]{
+        .executeQuery("insert into settings (key_name, value, user_id) values (?, ?, ?)", new Object[]{
             key, value, new Long(user.getId()),
         });
 

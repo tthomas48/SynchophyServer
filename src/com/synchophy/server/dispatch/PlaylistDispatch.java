@@ -1,6 +1,5 @@
 package com.synchophy.server.dispatch;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,82 +12,91 @@ import javax.servlet.http.HttpServletResponse;
 import com.synchophy.server.PlayerManager;
 import com.synchophy.server.db.DatabaseManager;
 
-
 public class PlaylistDispatch extends AbstractDispatch {
 
-  public Object execute(HttpServletRequest request, HttpServletResponse response)
-      throws IOException {
+	public Object execute(HttpServletRequest request,
+			HttpServletResponse response) throws IOException {
 
-    String action = getRequiredParameter(request, "a");
-    if (action.equals("add")) {
-      
-      int startPosition = DatabaseManager.getInstance().loadQueueFiles().size();
-      
-      String artist = getRequiredParameter(request, "artist");
-      String album = getRequiredParameter(request, "album");
-      String title = getRequiredParameter(request, "title");
-      boolean play = Boolean.parseBoolean(getOptionalParameter(request, "play"));
+		String action = getRequiredParameter(request, "a");
+		if (action.equals("add")) {
 
-      List params = new ArrayList();
-      String sql = "select file from song where artist_sort = ?";
-      String order = "order by artist_sort, album_sort, title_sort";
-      params.add(artist);
-      if (album.equals("*") == false) {
-        sql += " and album_sort = ?";
-        params.add(album);
-        
-      }
-      if (title.equals("*") == false) {
-        sql += " and trim(LEADING '0' FROM title_sort) = ?";
-        params.add(title);
-      }
+			int startPosition = DatabaseManager.getInstance().loadQueueFiles()
+					.size();
 
-      List queue = DatabaseManager.getInstance().loadQueueFiles();
-      int index = queue.size();
+			String artist = getOptionalParameter(request, "artist");
+			if(artist == null || artist.equals("")) {
+				artist = "*";
+			}
+			String album = getRequiredParameter(request, "album");
+			String title = getRequiredParameter(request, "title");
+			boolean play = Boolean.valueOf(getRequiredParameter(request,
+			"play")).booleanValue();
 
-      List toAdd = DatabaseManager.getInstance().query(sql + order,
-                                                       params.toArray(new String[params.size()]),
-                                                       new String[]{
-                                                         "file"
-                                                       });
-      for (int i = 0; i < toAdd.size(); i++) {
-        DatabaseManager.getInstance().executeQuery("insert into queue (index, file) values (?, ?)",
-                                                   new Object[]{
-                                                       new Integer(index + i),
-                                                       (String) ((Map) toAdd.get(i)).get("file")
-                                                   });
+			String conjunction = "where";
+			List params = new ArrayList();
+			String sql = "select file from song ";
+			String order = "order by artist_sort, album_sort, title_sort";
 
-      }
-      if(play) {
-        PlayerManager.getInstance().select(startPosition);
-        PlayerManager.getInstance().play();
-      }
-    } else if (action.equals("remove")) {
-      String index = getRequiredParameter(request, "i");
+			if (artist.equals("*") == false) {
+				sql += conjunction + " artist_sort = ? ";
+				params.add(artist);
+				conjunction = "and";
+			}
+			if (album.equals("*") == false) {
+				sql += conjunction + " album_sort = ? ";
+				params.add(album);
+				conjunction = "and";
 
-      DatabaseManager.getInstance().executeQuery("delete from queue where index = ?", new Object[]{
-        Integer.getInteger(index)
-      });
+			}
+			if (title.equals("*") == false) {
+				sql += conjunction + " trim(LEADING '0' FROM title_sort) = ? ";
+				params.add(title);
+			}
 
-    } else if (action.equals("list")) {
-      Map list = new HashMap();
-      list.put("queue", DatabaseManager.getInstance().loadQueue());
-      list.put("current", PlayerManager.getInstance().getPosition());
-      return list;
+			List queue = DatabaseManager.getInstance().loadQueueFiles();
+			int index = queue.size();
 
-    } else if (action.equals("clear")) {
-      DatabaseManager.getInstance().executeQuery("delete from queue", new Object[0]);
+			List toAdd = DatabaseManager.getInstance().query(sql + order,
+					params.toArray(new String[params.size()]),
+					new String[] { "file" });
+			for (int i = 0; i < toAdd.size(); i++) {
+				DatabaseManager.getInstance().executeQuery(
+						"insert into queue (index, file) values (?, ?)",
+						new Object[] { new Integer(index + i),
+								(String) ((Map) toAdd.get(i)).get("file") });
 
-    } else if (action.equals("save")) {
-      String name = getRequiredParameter(request, "n");
+			}
+			if (play) {
+				PlayerManager.getInstance().select(startPosition);
+				PlayerManager.getInstance().play();
+			}
+		} else if (action.equals("remove")) {
+			String index = getRequiredParameter(request, "i");
 
-    } else if (action.equals("load")) {
-      String name = getRequiredParameter(request, "n");
+			DatabaseManager.getInstance().executeQuery(
+					"delete from queue where index = ?",
+					new Object[] { Integer.getInteger(index) });
 
-    } else {
-      throw new RuntimeException("Invalid value for the parameter 'a'.");
-    }
-    return Boolean.TRUE;
-  }
+		} else if (action.equals("list")) {
+			Map list = new HashMap();
+			list.put("queue", DatabaseManager.getInstance().loadQueue());
+			list.put("current", PlayerManager.getInstance().getPosition());
+			return list;
+
+		} else if (action.equals("clear")) {
+			DatabaseManager.getInstance().executeQuery("delete from queue",
+					new Object[0]);
+
+		} else if (action.equals("save")) {
+			String name = getRequiredParameter(request, "n");
+
+		} else if (action.equals("load")) {
+			String name = getRequiredParameter(request, "n");
+
+		} else {
+			throw new RuntimeException("Invalid value for the parameter 'a'.");
+		}
+		return Boolean.TRUE;
+	}
 
 }
