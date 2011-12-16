@@ -48,19 +48,24 @@ public class ExpandDispatch extends AbstractDispatch {
 			artistFilter = "";
 			params = new String[] { value };
 		}
+		
+		String query = "select trim(LEADING '0' FROM s.title_sort), s.artist_sort, s.album_sort, coalesce(ss.stick, 0) "
+			+ "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
+			+ "  and (s.artist = ss.artist or ss.artist = '*') "
+			+ "  and (s.title = ss.name or ss.name = '*')) "
+			+ " where s.album_sort = ? "
+			+ artistFilter
+			+ getFilter(filter)
+			+ " group by s.title_sort, s.artist_sort, s.album_sort, coalesce(ss.stick, 0)  "
+			+ " order by upper(s.title_sort)";
+		System.err.println(query);
+		System.err.println(params);
+		
 
 		// returns tracks
 		return DatabaseManager
 				.getInstance()
-				.query("select trim(LEADING '0' FROM s.title_sort), s.artist_sort, s.album_sort, coalesce(ss.stick, 0) "
-						+ "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
-						+ "  and (s.artist = ss.artist or ss.artist = '*') "
-						+ "  and (s.title = ss.name or ss.name = '*')) "
-						+ " where s.album_sort = ? "
-						+ artistFilter
-						+ getFilter(filter)
-						+ " group by s.title_sort, s.artist_sort, s.album_sort, coalesce(ss.stick, 0)  "
-						+ " order by upper(s.title_sort)", params,
+				.query(query, params,
 						new String[] { "name", "artist", "album", "sticky" });
 	}
 

@@ -51,24 +51,45 @@ public class FileScanner {
 
     executeBatch();
     executeErrorBatch();
-    DatabaseManager.getInstance()
-        .executeQuery("merge into song using (select file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key, size from import) as vals(file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key, size)"
-                      + " on song.file = vals.file"
-                      + " when matched then"
-                      + " update set song.track = vals.track, "
-                      + " song.artist = vals.artist, song.artist_sort = vals.artist_sort, song.artist_key = vals.artist_key, "
-                      + "song.album = vals.album, song.album_sort = vals.album_sort, song.album_key = vals.album_key, "
-                      + "song.title = vals.title, song.title_sort = vals.title_sort, song.title_key = vals.album_key, "
-                      + "song.size = vals.size"
-                      + " when not matched then insert values(null, vals.file, vals.track, vals.artist, vals.artist_sort, vals.artist_key, "
-                      + "vals.album, vals.album_sort, vals.album_key, "
-                      + "vals.title, vals.title_sort, vals.title_key, vals.size)");
-    DatabaseManager.getInstance()
-        .executeQuery("merge into bad_song using (select file, message from import_error) as vals(file, message)"
-                      + " on bad_song.file = vals.file"
-                      + " when matched then"
-                      + " update set bad_song.message = vals.message"
-                      + " when not matched then insert values(null, vals.file, vals.message)");
+    String insertSQL = "INSERT INTO song (file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key,  size) " 
+    	+ " (SELECT file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key, size from import i where not exists (select 'x' from song where song.file = i.file))";
+    DatabaseManager.getInstance().executeQuery(insertSQL);
+    String updateSQL = "UPDATE song set song.artist = (select artist from import where song.file = import.file), song.artist_sort = (select artist_sort from import where song.file = import.file), song.artist_key = (select artist_key from import where song.file = import.file), "
+                      + "song.album = (select album from import where song.file = import.file), song.album_sort = (select album_sort from import where song.file = import.file), song.album_key = (select album_key from import where song.file = import.file), "
+                      + "song.title = (select title from import where song.file = import.file), song.title_sort = (select title_sort from import where song.file = import.file), song.title_key = (select title_key from import where song.file = import.file), "
+                      + "song.size = (select size from import where song.file = import.file)";
+    DatabaseManager.getInstance().executeQuery(updateSQL);
+    
+    insertSQL = "INSERT INTO bad_song (file, message) (select file, message from import_error where not exists (select 'x' from bad_song where bad_song.file = import_error.file))";
+    DatabaseManager.getInstance().executeQuery(insertSQL);
+    
+    updateSQL = "update bad_song set message = (select message from import_error where bad_song.file = import_error.file)";
+    DatabaseManager.getInstance().executeQuery(updateSQL);
+    
+    
+//    String updateSQL = "update song set song.track = vals.track"
+//                      + " song.artist = vals.artist, song.artist_sort = vals.artist_sort, song.artist_key = vals.artist_key, "
+//                      + "song.album = vals.album, song.album_sort = vals.album_sort, song.album_key = vals.album_key, "
+//                      + "song.title = vals.title, song.title_sort = vals.title_sort, song.title_key = vals.album_key, "
+//                      + "song.size = vals.size "
+//    DatabaseManager.getInstance()
+//        .executeQuery("merge into song using (select file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key, size from import) as vals(file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key, size)"
+//                      + " on song.file = vals.file"
+//                      + " when matched then"
+//                      + " update set song.track = vals.track, "
+//                      + " song.artist = vals.artist, song.artist_sort = vals.artist_sort, song.artist_key = vals.artist_key, "
+//                      + "song.album = vals.album, song.album_sort = vals.album_sort, song.album_key = vals.album_key, "
+//                      + "song.title = vals.title, song.title_sort = vals.title_sort, song.title_key = vals.album_key, "
+//                      + "song.size = vals.size"
+//                      + " when not matched then insert values(null, vals.file, vals.track, vals.artist, vals.artist_sort, vals.artist_key, "
+//                      + "vals.album, vals.album_sort, vals.album_key, "
+//                      + "vals.title, vals.title_sort, vals.title_key, vals.size)");
+//    DatabaseManager.getInstance()
+//        .executeQuery("merge into bad_song using (select file, message from import_error) as vals(file, message)"
+//                      + " on bad_song.file = vals.file"
+//                      + " when matched then"
+//                      + " update set bad_song.message = vals.message"
+//                      + " when not matched then insert values(null, vals.file, vals.message)");
     DatabaseManager.getInstance().executeQuery("delete from import");
     DatabaseManager.getInstance().executeQuery("delete from import_error");
     
@@ -226,6 +247,7 @@ public class FileScanner {
     } catch (SQLException e) {
       e.printStackTrace();
     }
+    System.gc();
   }
   
   private void executeErrorBatch() {
@@ -236,6 +258,7 @@ public class FileScanner {
     } catch (SQLException e) {
       e.printStackTrace();
     }
+    System.gc();
   }
   
 
@@ -244,7 +267,7 @@ public class FileScanner {
 
     try {
       Date start = new Date();
-      FileScanner scanner = new FileScanner("/home/tthomas/MUSIC/");
+      FileScanner scanner = new FileScanner("/home/tthomas/MUSIC/Republica/");
       scanner.scan();
       System.err.println("Scanned in " + ((new Date().getTime() - start.getTime()) / 1000) + "secs");
     } finally {

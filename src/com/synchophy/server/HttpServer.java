@@ -25,10 +25,10 @@ public class HttpServer {
 			};
 
 		});
-		if (args.length > 0 && args[0].equals("init")) {
-			DatabaseManager.getInstance().initTables();
-		}
-
+		
+		// initiate database
+		DatabaseManager.getInstance();
+		
 		// start our player thread
 		PlayerManager.getInstance();
 

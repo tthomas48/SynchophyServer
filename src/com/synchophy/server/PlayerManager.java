@@ -1,34 +1,22 @@
 package com.synchophy.server;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Map;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-
-import javazoom.jlme.decoder.BitStream;
-import javazoom.jlme.decoder.Decoder;
-import javazoom.jlme.decoder.Header;
-import javazoom.jlme.decoder.SampleBuffer;
-
 import com.synchophy.server.db.DatabaseManager;
+import com.synchophy.server.player.CommandLineMediaPlayer;
+import com.synchophy.server.player.IMediaPlayer;
 
 public class PlayerManager {
 
 	private final Object lock = new Object();
 	private static PlayerManager instance;
-	private SourceDataLine line;
 	private boolean running;
 	private boolean playable;
 	private boolean done;
 	private Thread playThread;
 	private int position;
+	private IMediaPlayer player;
 
 	private PlayerManager() {
 
@@ -36,6 +24,8 @@ public class PlayerManager {
 	}
 
 	private void init() {
+		
+		System.getProperty("media.player", CommandLineMediaPlayer.class.getName());
 
 		position = 0;
 		running = true;
@@ -66,18 +56,11 @@ public class PlayerManager {
 		return instance;
 	}
 
-	private BitStream getNextBitStream() {
-
+	private String getNextFilename() {
 		List queue = DatabaseManager.getInstance().loadQueueFiles();
-		try {
-			if (queue.size() > position) {
-				String filename = (String) ((Map) queue.get(position))
-						.get("file");
-				return new BitStream(new BufferedInputStream(
-						new FileInputStream(filename), 2048));
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+		if (queue.size() > position) {
+			String filename = (String) ((Map) queue.get(position)).get("file");
+			return filename;
 		}
 		return null;
 	}
@@ -128,79 +111,23 @@ public class PlayerManager {
 		try {
 			playable = true;
 			while (playable) {
-				boolean first = true;
-				int length;
-				int currentPosition = position;
-				BitStream bitstream = getNextBitStream();
-				if (bitstream == null) {
-					playable = false;
-					continue;
-				}
-				Header header = bitstream.readFrame();
-				Decoder decoder = new Decoder(header, bitstream);
+
 				while (playable) {
 					try {
-						if (currentPosition != position) {
-							// song has changed, break and get the next song
-							break;
-						}
-						SampleBuffer output = (SampleBuffer) decoder
-								.decodeFrame();
-						length = output.size();
-						if (length == 0) {
-							// only advance if we actually finish the song
-							position++;
-							break;
-						}
-						// {
-						if (first) {
-							first = false;
-							startOutput(new AudioFormat(
-									decoder.getOutputFrequency(), 16,
-									decoder.getOutputChannels(), true, false));
-						}
-						line.write(output.getBuffer(), 0, length);
-						bitstream.closeFrame();
-						header = bitstream.readFrame();
+						playable = player.play(getNextFilename());
 					} catch (Exception e) {
 						// e.printStackTrace();
 						break;
 					}
 				}
-				bitstream.close();
-				if (line != null) {
-					line.drain();
-				}
+				player.afterPlay();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		playable = false;
-		stopOutput();
+		player.stopOutput();
 		done = true;
-	}
-
-	public void startOutput(AudioFormat playFormat)
-			throws LineUnavailableException {
-
-		DataLine.Info info = new DataLine.Info(SourceDataLine.class, playFormat);
-
-		if (!AudioSystem.isLineSupported(info)) {
-			throw new LineUnavailableException("Cannot play sound format.");
-		}
-		line = (SourceDataLine) AudioSystem.getLine(info);
-		line.open(playFormat);
-		line.start();
-	}
-
-	private void stopOutput() {
-
-		if (line != null) {
-			line.drain();
-			line.stop();
-			line.close();
-			line = null;
-		}
 	}
 
 	public void play() {
@@ -269,6 +196,11 @@ public class PlayerManager {
 	public Integer getPosition() {
 
 		return new Integer(position);
+	}
+
+	public void setPosition(int position) {
+		this.position = position;
+
 	}
 
 }

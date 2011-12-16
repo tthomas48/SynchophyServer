@@ -25,10 +25,10 @@ public class StringUtilsTest extends TestCase {
   }
   
   public void testCleanTrack() {
-    assertEquals("1", StringUtils.cleanTrack("01"));
-    assertEquals("1", StringUtils.cleanTrack("1"));
-    assertEquals("1", StringUtils.cleanTrack("1/14"));
-    assertEquals("10", StringUtils.cleanTrack("10/14"));
-    assertEquals("1", StringUtils.cleanTrack("01/14"));
+    assertEquals("0000000001", StringUtils.cleanTrack("01"));
+    assertEquals("0000000001", StringUtils.cleanTrack("1"));
+    assertEquals("0000000001", StringUtils.cleanTrack("1/14"));
+    assertEquals("0000000010", StringUtils.cleanTrack("10/14"));
+    assertEquals("0000000001", StringUtils.cleanTrack("01/14"));
   }
 }

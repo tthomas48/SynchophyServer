@@ -11,8 +11,9 @@ import com.synchophy.server.scanner.FileScanner;
 public class RescanMusicDispatch extends AbstractDispatch {
 
   public Object execute(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    // TODO: Make file path a parameter
-    FileScanner fileScanner = new FileScanner("/home/tthomas/MUSIC/");
+	  
+	String musicPath = System.getProperty("music.path", "./Music");
+    FileScanner fileScanner = new FileScanner(musicPath);
     fileScanner.scan();
     return Boolean.TRUE;
   }

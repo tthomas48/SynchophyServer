@@ -20,7 +20,8 @@ public class ControllerServlet extends HttpServlet {
 
     String dispatchKey = request.getPathInfo();
     System.err.println(dispatchKey);
-    dispatchKey = dispatchKey.replaceFirst("/", "");
+    dispatchKey = dispatchKey.replace('/',' ').trim();
+    //dispatchKey = dispatchKey.replaceFirst("/", "");
 
     if (!isLoggedIn(dispatchKey, request)) {
       do401(dispatchKey, request, response);
