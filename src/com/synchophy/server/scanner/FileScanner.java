@@ -54,17 +54,17 @@ public class FileScanner {
     String insertSQL = "INSERT INTO song (file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key,  size) " 
     	+ " (SELECT file, track, artist, artist_sort, artist_key, album, album_sort, album_key, title, title_sort, title_key, size from import i where not exists (select 'x' from song where song.file = i.file))";
     DatabaseManager.getInstance().executeQuery(insertSQL);
-    String updateSQL = "UPDATE song set song.artist = (select artist from import where song.file = import.file), song.artist_sort = (select artist_sort from import where song.file = import.file), song.artist_key = (select artist_key from import where song.file = import.file), "
-                      + "song.album = (select album from import where song.file = import.file), song.album_sort = (select album_sort from import where song.file = import.file), song.album_key = (select album_key from import where song.file = import.file), "
-                      + "song.title = (select title from import where song.file = import.file), song.title_sort = (select title_sort from import where song.file = import.file), song.title_key = (select title_key from import where song.file = import.file), "
-                      + "song.size = (select size from import where song.file = import.file)";
-    DatabaseManager.getInstance().executeQuery(updateSQL);
+//    String updateSQL = "UPDATE song set song.artist = (select artist from import where song.file = import.file), song.artist_sort = (select artist_sort from import where song.file = import.file), song.artist_key = (select artist_key from import where song.file = import.file), "
+//                      + "song.album = (select album from import where song.file = import.file), song.album_sort = (select album_sort from import where song.file = import.file), song.album_key = (select album_key from import where song.file = import.file), "
+//                      + "song.title = (select title from import where song.file = import.file), song.title_sort = (select title_sort from import where song.file = import.file), song.title_key = (select title_key from import where song.file = import.file), "
+//                      + "song.size = (select size from import where song.file = import.file)";
+//    DatabaseManager.getInstance().executeQuery(updateSQL);
     
     insertSQL = "INSERT INTO bad_song (file, message) (select file, message from import_error where not exists (select 'x' from bad_song where bad_song.file = import_error.file))";
     DatabaseManager.getInstance().executeQuery(insertSQL);
     
-    updateSQL = "update bad_song set message = (select message from import_error where bad_song.file = import_error.file)";
-    DatabaseManager.getInstance().executeQuery(updateSQL);
+//    updateSQL = "update bad_song set message = (select message from import_error where bad_song.file = import_error.file)";
+//    DatabaseManager.getInstance().executeQuery(updateSQL);
     
     
 //    String updateSQL = "update song set song.track = vals.track"

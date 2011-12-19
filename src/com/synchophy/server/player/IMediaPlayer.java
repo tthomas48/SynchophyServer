@@ -4,10 +4,15 @@ import java.io.IOException;
 
 public interface IMediaPlayer {
 
-	public abstract boolean play(String filename) throws IOException;
+	public boolean notifyPlay(String filename) throws IOException;
 
-	public abstract void stopOutput();
-
-	public void afterPlay() throws IOException;
-
+	public void notifyAfterPlay() throws IOException;
+	
+	public void notifyPositionChange();
+	
+	public void notifyStop();
+	
+	public void shutdown();
+	
+	public void notifyPause();
 }

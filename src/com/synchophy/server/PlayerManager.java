@@ -24,10 +24,25 @@ public class PlayerManager {
 	}
 
 	private void init() {
-		
-		System.getProperty("media.player", CommandLineMediaPlayer.class.getName());
 
-		position = 0;
+		try {
+			String playerClass = System.getProperty("media.player",
+					CommandLineMediaPlayer.class.getName());
+			Class clazz = Class.forName(playerClass);
+			Object obj = clazz.newInstance();
+			if (obj instanceof IMediaPlayer == false) {
+				throw new RuntimeException("Invalid media player specified: "
+						+ playerClass);
+			}
+			player = (IMediaPlayer) obj;
+
+		} catch (Exception e) {
+			throw new RuntimeException(
+					"Could not initialize media player. Check your media.player command line option.",
+					e);
+		}
+
+		setPosition(0);
 		running = true;
 		playThread = new Thread("PlayThread") {
 
@@ -67,42 +82,47 @@ public class PlayerManager {
 
 	public void next() {
 
-		position++;
+		int p = this.position;
+		p++;
 		List queue = DatabaseManager.getInstance().loadQueueFiles();
-		if (position > queue.size() - 1) {
-			position = queue.size() - 1;
+		if (p > queue.size() - 1) {
+			p = queue.size() - 1;
 		}
+		setPosition(p);
 	}
 
 	public void previous() {
 
-		position--;
-		if (position < 0) {
-			position = 0;
+		int p = this.position;
+		p--;
+		if (p < 0) {
+			p = 0;
 		}
+		setPosition(p);
 	}
 
 	public void first() {
 
-		position = 0;
+		setPosition(0);
 	}
 
 	public void last() {
 
 		List queue = DatabaseManager.getInstance().loadQueueFiles();
-		position = queue.size() - 1;
+		setPosition(queue.size() - 1);
 	}
 
 	public void select(int index) {
 
 		List queue = DatabaseManager.getInstance().loadQueueFiles();
-		position = index;
-		if (position < 0) {
-			position = 0;
+		int p = index;
+		if (p < 0) {
+			p = 0;
 		}
-		if (position > queue.size() - 1) {
-			position = queue.size() - 1;
+		if (p > queue.size() - 1) {
+			p = queue.size() - 1;
 		}
+		setPosition(p);
 	}
 
 	private void playList() {
@@ -112,21 +132,26 @@ public class PlayerManager {
 			playable = true;
 			while (playable) {
 
-				while (playable) {
-					try {
-						playable = player.play(getNextFilename());
-					} catch (Exception e) {
-						// e.printStackTrace();
-						break;
+				try {
+					String filename = getNextFilename();
+					if (filename == null) {
+						System.err.println("No more files to play.");
+						playable = false;
+						continue;
 					}
+					System.err.println("Playing " + filename);
+					playable = player.notifyPlay(filename);
+				} catch (Exception e) {
+					e.printStackTrace();
+					break;
 				}
-				player.afterPlay();
+				player.notifyAfterPlay();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		playable = false;
-		player.stopOutput();
+		player.notifyStop();
 		done = true;
 	}
 
@@ -137,9 +162,14 @@ public class PlayerManager {
 		}
 	}
 
+	public void pause() {
+		player.notifyPause();
+	}
+
 	public void stop() {
 
 		playable = false;
+		player.notifyStop();
 	}
 
 	public void shutdown() {
@@ -200,7 +230,6 @@ public class PlayerManager {
 
 	public void setPosition(int position) {
 		this.position = position;
-
+		player.notifyPositionChange();
 	}
-
 }

@@ -1,6 +1,7 @@
 package com.synchophy.server.dispatch;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -16,8 +17,8 @@ public class ExpandDispatch extends AbstractDispatch {
 		String value = getRequiredParameter(request, "v");
 		String artist = getOptionalParameter(request, "artist");
 		String view = getOptionalParameter(request, "view");
-		boolean filter = Boolean.valueOf(getRequiredParameter(request,
-				"filter")).booleanValue();
+		boolean filter = Boolean.valueOf(
+				getRequiredParameter(request, "filter")).booleanValue();
 
 		if (type.equals("letter")) {
 			if (view.equals("artists")) {
@@ -48,25 +49,21 @@ public class ExpandDispatch extends AbstractDispatch {
 			artistFilter = "";
 			params = new String[] { value };
 		}
-		
-		String query = "select trim(LEADING '0' FROM s.title_sort), s.artist_sort, s.album_sort, coalesce(ss.stick, 0) "
-			+ "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
-			+ "  and (s.artist = ss.artist or ss.artist = '*') "
-			+ "  and (s.title = ss.name or ss.name = '*')) "
-			+ " where s.album_sort = ? "
-			+ artistFilter
-			+ getFilter(filter)
-			+ " group by s.title_sort, s.artist_sort, s.album_sort, coalesce(ss.stick, 0)  "
-			+ " order by upper(s.title_sort)";
-		System.err.println(query);
-		System.err.println(params);
-		
 
+		String query = "select trim(LEADING '0' FROM s.title_sort) name, s.artist_sort artist, s.album_sort album, coalesce(ss.stick, 0) sticky "
+				+ "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
+				+ "  and (s.artist = ss.artist or ss.artist = '*') "
+				+ "  and (s.title = ss.name or ss.name = '*')) "
+				+ " where s.album_sort = ? "
+				+ getFilter(filter)
+				+ artistFilter
+
+				+ " group by s.title_sort, s.artist_sort, s.album_sort, coalesce(ss.stick, 0)  "
+				+ " order by upper(s.title_sort)";
 		// returns tracks
-		return DatabaseManager
-				.getInstance()
-				.query(query, params,
-						new String[] { "name", "artist", "album", "sticky" });
+		List tracks = DatabaseManager.getInstance().query(query, params,
+				new String[] { "name", "artist", "album", "sticky" });
+		return tracks;
 	}
 
 	private Object expandArtists(boolean filter, String value) {
@@ -103,16 +100,18 @@ public class ExpandDispatch extends AbstractDispatch {
 
 	private Object expandAlbumsLetter(boolean filter, String value) {
 
-		return DatabaseManager
+		List albums = DatabaseManager
 				.getInstance()
 				.query("select album_sort, '', coalesce(ss.stick, 0) "
 						+ "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
 						+ "  and (s.artist = ss.artist or ss.artist = '*') "
 						+ "  and (s.title = ss.name or ss.name = '*')) "
-						+ "where album_key = ? " + getFilter(filter)
+						+ " where album_key = ? " + getFilter(filter)
 						+ "group by album_sort, coalesce(ss.stick, 0) "
 						+ "order by upper(album_sort)", new String[] { value },
 						new String[] { "name", "artist", "sticky" });
+		System.err.println(albums);
+		return albums;
 	}
 
 }

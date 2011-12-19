@@ -60,6 +60,7 @@ public class PlaylistDispatch extends AbstractDispatch {
 					params.toArray(new String[params.size()]),
 					new String[] { "file" });
 			for (int i = 0; i < toAdd.size(); i++) {
+				System.err.println("Inserting into queue [" + new Integer(index + i) +"]" + (String) ((Map) toAdd.get(i)).get("file"));
 				DatabaseManager.getInstance().executeQuery(
 						"insert into queue (index, file) values (?, ?)",
 						new Object[] { new Integer(index + i),
@@ -72,6 +73,8 @@ public class PlaylistDispatch extends AbstractDispatch {
 			}
 		} else if (action.equals("remove")) {
 			String index = getRequiredParameter(request, "i");
+			
+			System.err.println("Deleting from queue [" + new Integer(index) +"]");
 
 			DatabaseManager.getInstance().executeQuery(
 					"delete from queue where index = ?",

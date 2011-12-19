@@ -5,25 +5,27 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.Mixer.Info;
 
-import javazoom.jlme.decoder.BitStream;
-import javazoom.jlme.decoder.Decoder;
-import javazoom.jlme.decoder.Header;
-import javazoom.jlme.decoder.SampleBuffer;
+import javazoom.jl.decoder.Bitstream;
+import javazoom.jl.decoder.BitstreamException;
+import javazoom.jl.decoder.Decoder;
+import javazoom.jl.decoder.Header;
+import javazoom.jl.decoder.JavaLayerException;
+import javazoom.jl.decoder.SampleBuffer;
+import javazoom.jl.player.AudioDevice;
+import javazoom.jl.player.FactoryRegistry;
 
 import com.synchophy.server.PlayerManager;
 
 public class JavaMediaPlayer implements IMediaPlayer {
 
-	private SourceDataLine line;
-	private BitStream bitstream;
+	private AudioDevice audio;
+	private Decoder decoder;
+	private Bitstream bitstream;
 
-	private BitStream loadBitStream(String filename) {
+	private Bitstream loadBitStream(String filename) {
 
 		if (filename == null) {
 			return null;
@@ -31,7 +33,7 @@ public class JavaMediaPlayer implements IMediaPlayer {
 
 		try {
 
-			return new BitStream(new BufferedInputStream(new FileInputStream(
+			return new Bitstream(new BufferedInputStream(new FileInputStream(
 					filename), 2048));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -44,52 +46,58 @@ public class JavaMediaPlayer implements IMediaPlayer {
 	 * 
 	 * @see com.synchophy.server.player.IMediaPlayer#play(java.lang.String)
 	 */
-	public boolean play(String filename) throws IOException {
+	public boolean notifyPlay(String filename) throws IOException {
+
+		System.err.println("Starting play with JavaMediaPlayer.");
+
+		startOutput();
 
 		bitstream = loadBitStream(filename);
 		if (bitstream == null) {
+			System.err.println("Bitstream is null");
 			return false;
 		}
-		int length;
-		boolean first = true;
 		int currentPosition = PlayerManager.getInstance().getPosition()
 				.intValue();
 
-		Header header = bitstream.readFrame();
-		Decoder decoder = new Decoder(header, bitstream);
+		int frames = Integer.MAX_VALUE;
 		while (Boolean.TRUE.equals(PlayerManager.getInstance().isPlaying())) {
 			try {
 				int position = PlayerManager.getInstance().getPosition()
 						.intValue();
 				if (currentPosition != position) {
 					// song has changed, break and get the next song
+					System.err.println(currentPosition + ":" + position);
 					return true;
 				}
-				SampleBuffer output = (SampleBuffer) decoder.decodeFrame();
-				length = output.size();
-				if (length == 0) {
+
+				boolean done = false;
+				while (frames-- > 0
+						&& Boolean.TRUE.equals(PlayerManager.getInstance()
+								.isPlaying())) {
+					if (decodeFrame() == false) {
+						done = true;
+						break;
+					}
+				}
+				if (done) {
 					// only advance if we actually finish the song
+					System.err
+							.println("Advancing because we finished the song.");
 					PlayerManager.getInstance().setPosition(position++);
 					return true;
 				}
-				// {
-				if (first) {
-					first = false;
-					startOutput(new AudioFormat(decoder.getOutputFrequency(),
-							16, decoder.getOutputChannels(), true, false));
-				}
-				line.write(output.getBuffer(), 0, length);
-				bitstream.closeFrame();
-				header = bitstream.readFrame();
 			} catch (Exception e) {
-				// e.printStackTrace();
+				e.printStackTrace();
 				break;
 			}
 		}
-		bitstream.close();
-		if (line != null) {
-			line.drain();
+		try {
+			bitstream.close();
+		} catch (BitstreamException e) {
+			e.printStackTrace();
 		}
+		System.err.println("Advancing because we feel out of the loop.");
 		return true;
 	}
 
@@ -100,43 +108,85 @@ public class JavaMediaPlayer implements IMediaPlayer {
 	 * com.synchophy.server.player.IMediaPlayer#startOutput(javax.sound.sampled
 	 * .AudioFormat)
 	 */
-	private void startOutput(AudioFormat playFormat)
-			throws LineUnavailableException {
+	private void startOutput() {
 
-		DataLine.Info info = new DataLine.Info(SourceDataLine.class, playFormat);
-
-		if (!AudioSystem.isLineSupported(info)) {
-			throw new LineUnavailableException("Cannot play sound format.");
+		Info[] info = AudioSystem.getMixerInfo();
+		System.err.println("Found " + info.length + " mixer implementations.");
+		for (int i = 0; i < info.length; i++) {
+			Info mixer = info[i];
+			System.err.println(mixer.getName());
 		}
-		line = (SourceDataLine) AudioSystem.getLine(info);
-		line.open(playFormat);
-		line.start();
-	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.synchophy.server.player.IMediaPlayer#stopOutput()
-	 */
-	public void stopOutput() {
+		decoder = new Decoder();
 
+		FactoryRegistry r = FactoryRegistry.systemRegistry();
 		try {
-			if (line != null) {
-				line.drain();
-				line.stop();
-				line.close();
-				line = null;
-			}
-		} catch (Exception e) {
+			audio = r.createAudioDevice();
+			audio.open(decoder);
+		} catch (JavaLayerException e) {
 			e.printStackTrace();
+			throw new RuntimeException("Could not start audio subsystem.", e);
+
 		}
+
 	}
 
-	public void afterPlay() throws IOException {
-		bitstream.close();
-		if (line != null) {
-			line.drain();
-		}
+	public void notifyAfterPlay() throws IOException {
+		notifyStop();
 	}
 
+	protected boolean decodeFrame() throws JavaLayerException {
+		try {
+			AudioDevice out = audio;
+			if (out == null)
+				return false;
+
+			Header h = bitstream.readFrame();
+
+			if (h == null)
+				return false;
+
+			// sample buffer set when decoder constructed
+			SampleBuffer output = (SampleBuffer) decoder.decodeFrame(h,
+					bitstream);
+
+			synchronized (this) {
+				out = audio;
+				System.err.println("Attempting write");
+				if (out != null) {
+					System.err.println("Writing");
+					out.write(output.getBuffer(), 0, output.getBufferLength());
+				}
+			}
+
+			bitstream.closeFrame();
+		} catch (RuntimeException ex) {
+			throw new JavaLayerException("Exception decoding audio frame", ex);
+		}
+
+		return true;
+	}
+
+	public void notifyPositionChange() {
+	}
+
+	public void notifyStop() {
+		AudioDevice out = audio;
+		if (out != null) {
+			audio = null;
+			// this may fail, so ensure object state is set up before
+			// calling this method.
+			out.close();
+			try {
+				bitstream.close();
+			} catch (BitstreamException ex) {
+			}
+		}
+	}
+	
+	public void shutdown() {
+	}
+	
+	public void notifyPause() {
+	}
 }

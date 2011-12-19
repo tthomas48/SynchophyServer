@@ -20,6 +20,9 @@ public class PlayerDispatch extends AbstractDispatch {
     if(action.equals("play")) {
       PlayerManager.getInstance().play();
     }
+    else if(action.equals("pause")) {
+    	PlayerManager.getInstance().pause();
+    }
     else if(action.equals("stop")) {
       PlayerManager.getInstance().stop();
     }

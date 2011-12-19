@@ -2,6 +2,7 @@ package com.synchophy.server.db;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -11,20 +12,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.derby.jdbc.EmbeddedSimpleDataSource;
-
 public class DatabaseManager {
+	static {
+		try {
+			Class.forName("org.hsqldb.jdbcDriver");
+
+		} catch (Exception e) {
+			throw new RuntimeException("Could not load hsqldb driver.");
+		}
+
+	}
 
 	ThreadLocal connection = new ThreadLocal();
-	EmbeddedSimpleDataSource ds;
 
 	private static DatabaseManager instance;
 
 	private DatabaseManager() {
 
-		ds = new EmbeddedSimpleDataSource();
-		ds.setDatabaseName("synchophyserver");
-		ds.setCreateDatabase("create");
 		init();
 	}
 
@@ -63,7 +67,7 @@ public class DatabaseManager {
 
 	private boolean tableExists(DatabaseMetaData dbmd, String name)
 			throws SQLException {
-		ResultSet rs = dbmd.getTables(null, "APP", name.toUpperCase(), null);
+		ResultSet rs = dbmd.getTables(null, null, name.toUpperCase(), null);
 		try {
 			return rs.next();
 		} finally {
@@ -111,7 +115,7 @@ public class DatabaseManager {
 
 	public List query(String sql, Object[] params) {
 
-		return query(sql, params, new String[] { "name" });
+		return query(sql, params, new String[0]);
 	}
 
 	public List query(String sql, Object[] params, String[] outputKeys) {
@@ -126,18 +130,20 @@ public class DatabaseManager {
 			List result = new ArrayList();
 
 			ResultSet rs = sth.executeQuery();
-			ResultSetMetaData md = rs.getMetaData();
-			int columnCount = md.getColumnCount();
-			if (outputKeys.length != columnCount) {
-				outputKeys = new String[columnCount];
-				for (int i = 0; i < columnCount; i++) {
-					outputKeys[i] = md.getColumnName(i + 1);
+			if (outputKeys.length == 0) {
+				ResultSetMetaData md = rs.getMetaData();
+				int columnCount = md.getColumnCount();
+				if (outputKeys.length != columnCount) {
+					outputKeys = new String[columnCount];
+					for (int i = 0; i < columnCount; i++) {
+						outputKeys[i] = md.getColumnName(i + 1);
+					}
 				}
 			}
 
 			while (rs.next()) {
 				Map row = new HashMap();
-				for (int i = 0; i < columnCount; i++) {
+				for (int i = 0; i < outputKeys.length; i++) {
 					row.put(outputKeys[i], rs.getObject(i + 1));
 				}
 				result.add(row);
@@ -166,7 +172,9 @@ public class DatabaseManager {
 
 		try {
 			if (connection.get() == null) {
-				connection.set(ds.getConnection());
+
+				connection.set(DriverManager.getConnection(
+						"jdbc:hsqldb:file:music", "sa", ""));
 			}
 			return (Connection) connection.get();
 		} catch (SQLException e) {
@@ -177,6 +185,7 @@ public class DatabaseManager {
 
 	protected void close() {
 
+		executeQuery("SHUTDOWN;");
 		try {
 			Connection c = (Connection) connection.get();
 			if (c != null) {
@@ -185,8 +194,7 @@ public class DatabaseManager {
 			connection.set(null);
 		} catch (SQLException e) {
 			// TODO log warning
- 		}
-		ds.setShutdownDatabase("true");
+		}
 	}
 
 	public void shutdown() {

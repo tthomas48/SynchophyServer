@@ -29,7 +29,7 @@ public class StickyDispatch extends AbstractDispatch {
                           name, new Long(user.getId()), artist, album
                       });
     DatabaseManager.getInstance()
-    .executeQuery("INSERT INTO sticky (id, name, stick, user_id, artist, album) values (null, ?, ?, ?, ?, ?)",
+    .executeQuery("INSERT INTO sticky (name, stick, user_id, artist, album) values (?, ?, ?, ?, ?)",
                   new Object[]{
                       name, sticky, new Long(user.getId()), artist, album
                   });
