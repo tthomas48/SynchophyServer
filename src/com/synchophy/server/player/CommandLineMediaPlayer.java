@@ -17,17 +17,22 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 
 	public CommandLineMediaPlayer() {
 		System.err.println("Attempting to start mpg123 remote.");
+		
+		final String playerBinary = System.getProperty("media.player.path",
+				"/opt/bin/mpg123");
+		
 		Thread remoteThread = new Thread() {
 			public void run() {
 				try {
 					Process process = Runtime.getRuntime().exec(
-							new String[] { "/opt/bin/mpg123", "-R" });
+							new String[] { playerBinary, "-R" });
 					out = process.getOutputStream();
 					input = new BufferedReader(new InputStreamReader(
 							process.getInputStream()));
 					process.waitFor();
 				} catch (Exception e) {
 					System.err.println("Remote control stopped.");
+					e.printStackTrace();
 
 				} finally {
 					if (out != null) {
@@ -53,10 +58,6 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 	}
 
 	private void sendCommand(String command) {
-		sendCommand(command, true);
-	}
-
-	private void sendCommand(String command, boolean wait) {
 		System.err.println(command);
 		if (out == null) {
 			return;
@@ -65,15 +66,6 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 			out.write((command + "\n").getBytes());
 			out.flush();
 
-			// wait until we see our input echoed back to us
-			if (wait) {
-				String in = null;
-				while ((in = input.readLine()) != null) {
-					if (in.equals(command)) {
-						break;
-					}
-				}
-			}
 		} catch (IOException e) {
 			System.err.println("Unable to write command " + command);
 			e.printStackTrace();
@@ -93,11 +85,17 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 		sendCommand("L " + filename);
 		String in = null;
 
+		boolean started = false;
 		while (Boolean.TRUE.equals(PlayerManager.getInstance().isPlaying())
 				&& (in = input.readLine()) != null) {
-			if (in.equals("@P 0")) {
+			if (started && in.equals("@P 0")) {
 				System.err.println("Done playing " + filename);
 				break;
+			}
+			
+			if (in.substring(0, 2).equals("@I")) {
+				// loaded info about the current song
+				started = true;
 			}
 
 			if (in.substring(0, 2).equals("@F")) {
@@ -121,14 +119,14 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 
 	public void notifyStop() {
 		advance = false;
-		sendCommand("stop", false);
+		sendCommand("stop");
 	}
 
 	public void shutdown() {
-		sendCommand("quit", false);
+		sendCommand("quit");
 	}
 
 	public void notifyPause() {
-		sendCommand("pause", false);
+		sendCommand("pause");
 	}
 }

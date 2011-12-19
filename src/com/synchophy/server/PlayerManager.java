@@ -203,7 +203,7 @@ public class PlayerManager {
 	public Map getCurrentSong() {
 
 		List queue = DatabaseManager.getInstance().loadQueueFiles();
-		if (position >= queue.size() - 1) {
+		if (position >= queue.size()) {
 			return null;
 		}
 		String song = (String) ((Map) queue.get(position)).get("file");

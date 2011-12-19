@@ -267,7 +267,7 @@ public class FileScanner {
 
     try {
       Date start = new Date();
-      FileScanner scanner = new FileScanner("/home/tthomas/MUSIC/Republica/");
+      FileScanner scanner = new FileScanner("/home/tthomas/Music/");
       scanner.scan();
       System.err.println("Scanned in " + ((new Date().getTime() - start.getTime()) / 1000) + "secs");
     } finally {
