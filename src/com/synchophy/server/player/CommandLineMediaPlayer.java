@@ -14,13 +14,14 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 	private BufferedReader input;
 	// at some point we might want to be able to handle this
 	private String elapsed;
+	private boolean positionChanged;
 
 	public CommandLineMediaPlayer() {
 		System.err.println("Attempting to start mpg123 remote.");
-		
+
 		final String playerBinary = System.getProperty("media.player.path",
 				"/opt/bin/mpg123");
-		
+
 		Thread remoteThread = new Thread() {
 			public void run() {
 				try {
@@ -85,14 +86,24 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 		sendCommand("L " + filename);
 		String in = null;
 
+		positionChanged = false;
 		boolean started = false;
 		while (Boolean.TRUE.equals(PlayerManager.getInstance().isPlaying())
-				&& (in = input.readLine()) != null) {
+				&& !positionChanged && (in = input.readLine()) != null) {
+			if (PlayerManager.getInstance().isPaused()) {
+				synchronized (PlayerManager.getInstance().getPauseLock()) {
+					try {
+						PlayerManager.getInstance().getPauseLock().wait();
+					} catch (InterruptedException e) {
+					}
+					continue;
+				}
+			}
 			if (started && in.equals("@P 0")) {
 				System.err.println("Done playing " + filename);
 				break;
 			}
-			
+
 			if (in.substring(0, 2).equals("@I")) {
 				// loaded info about the current song
 				started = true;
@@ -114,7 +125,8 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 	}
 
 	public void notifyPositionChange() {
-		notifyStop();
+		advance = false;
+		positionChanged = true;
 	}
 
 	public void notifyStop() {
@@ -127,6 +139,10 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 	}
 
 	public void notifyPause() {
+		sendCommand("pause");
+	}
+
+	public void notifyUnpause() {
 		sendCommand("pause");
 	}
 }

@@ -15,4 +15,6 @@ public interface IMediaPlayer {
 	public void shutdown();
 	
 	public void notifyPause();
+	
+	public void notifyUnpause();
 }

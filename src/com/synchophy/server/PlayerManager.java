@@ -10,10 +10,12 @@ import com.synchophy.server.player.IMediaPlayer;
 public class PlayerManager {
 
 	private final Object lock = new Object();
+	protected final Object pause = new Object();
 	private static PlayerManager instance;
 	private boolean running;
 	private boolean playable;
 	private boolean done;
+	protected boolean paused;
 	private Thread playThread;
 	private int position;
 	private IMediaPlayer player;
@@ -56,6 +58,10 @@ public class PlayerManager {
 							running = false;
 						}
 					}
+					if(!running) {
+						continue;
+					}
+					
 					playList();
 				}
 			}
@@ -151,11 +157,18 @@ public class PlayerManager {
 			e.printStackTrace();
 		}
 		playable = false;
-		player.notifyStop();
 		done = true;
 	}
 
 	public void play() {
+		if (paused) {
+			synchronized (pause) {
+				player.notifyUnpause();
+				pause.notifyAll();
+				paused = false;
+			}
+			return;
+		}
 
 		synchronized (lock) {
 			lock.notify();
@@ -163,6 +176,7 @@ public class PlayerManager {
 	}
 
 	public void pause() {
+		paused = true;
 		player.notifyPause();
 	}
 
@@ -178,6 +192,9 @@ public class PlayerManager {
 		running = false;
 		if (playThread != null) {
 			try {
+				synchronized (pause) {
+					pause.notifyAll();
+				}
 				synchronized (lock) {
 					lock.notify();
 				}
@@ -219,6 +236,9 @@ public class PlayerManager {
 	}
 
 	public Boolean isPlaying() {
+		if (paused) {
+			return Boolean.FALSE;
+		}
 
 		return Boolean.valueOf(playable);
 	}
@@ -231,5 +251,13 @@ public class PlayerManager {
 	public void setPosition(int position) {
 		this.position = position;
 		player.notifyPositionChange();
+	}
+
+	public boolean isPaused() {
+		return paused;
+	}
+
+	public Object getPauseLock() {
+		return pause;
 	}
 }

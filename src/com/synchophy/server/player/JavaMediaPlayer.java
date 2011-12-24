@@ -189,4 +189,7 @@ public class JavaMediaPlayer implements IMediaPlayer {
 	
 	public void notifyPause() {
 	}
+	
+	public void notifyUnpause() {
+	}
 }

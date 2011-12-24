@@ -20,17 +20,16 @@ public class PlaylistDispatch extends AbstractDispatch {
 		String action = getRequiredParameter(request, "a");
 		if (action.equals("add")) {
 
-			int startPosition = DatabaseManager.getInstance().loadQueueFiles()
-					.size();
+			int startPosition = DatabaseManager.getInstance().loadQueueMax();
 
 			String artist = getOptionalParameter(request, "artist");
-			if(artist == null || artist.equals("")) {
+			if (artist == null || artist.equals("")) {
 				artist = "*";
 			}
 			String album = getRequiredParameter(request, "album");
 			String title = getRequiredParameter(request, "title");
-			boolean play = Boolean.valueOf(getRequiredParameter(request,
-			"play")).booleanValue();
+			boolean play = Boolean.valueOf(
+					getRequiredParameter(request, "play")).booleanValue();
 
 			String conjunction = "where";
 			List params = new ArrayList();
@@ -53,14 +52,15 @@ public class PlaylistDispatch extends AbstractDispatch {
 				params.add(title);
 			}
 
-			List queue = DatabaseManager.getInstance().loadQueueFiles();
-			int index = queue.size();
+			int index = startPosition + 1;
 
 			List toAdd = DatabaseManager.getInstance().query(sql + order,
 					params.toArray(new String[params.size()]),
 					new String[] { "file" });
 			for (int i = 0; i < toAdd.size(); i++) {
-				System.err.println("Inserting into queue [" + new Integer(index + i) +"]" + (String) ((Map) toAdd.get(i)).get("file"));
+				System.err.println("Inserting into queue ["
+						+ new Integer(index + i) + "]"
+						+ (String) ((Map) toAdd.get(i)).get("file"));
 				DatabaseManager.getInstance().executeQuery(
 						"insert into queue (index, file) values (?, ?)",
 						new Object[] { new Integer(index + i),
@@ -71,14 +71,40 @@ public class PlaylistDispatch extends AbstractDispatch {
 				PlayerManager.getInstance().select(startPosition);
 				PlayerManager.getInstance().play();
 			}
+		} else if (action.equals("add-tag")) {
+			String tag = getRequiredParameter(request, "tag");
+			boolean play = Boolean.valueOf(
+					getRequiredParameter(request, "play")).booleanValue();
+			
+			List tracks = DatabaseManager.getInstance().loadTracksForTag(tag);
+
+			int startPosition = DatabaseManager.getInstance().loadQueueMax();
+			int index = startPosition + 1;
+
+			for (int i = 0; i < tracks.size(); i++) {
+				System.err.println("Inserting into queue ["
+						+ new Integer(index + i) + "]"
+						+ (String) ((Map) tracks.get(i)).get("file"));
+				DatabaseManager.getInstance().executeQuery(
+						"insert into queue (index, file) values (?, ?)",
+						new Object[] { new Integer(index + i),
+								(String) ((Map) tracks.get(i)).get("file") });
+
+			}
+			if (play) {
+				PlayerManager.getInstance().select(startPosition);
+				PlayerManager.getInstance().play();
+			}
+
 		} else if (action.equals("remove")) {
 			String index = getRequiredParameter(request, "i");
-			
-			System.err.println("Deleting from queue [" + new Integer(index) +"]");
+
+			System.err.println("Deleting from queue [" + new Integer(index)
+					+ "]");
 
 			DatabaseManager.getInstance().executeQuery(
 					"delete from queue where index = ?",
-					new Object[] { Integer.getInteger(index) });
+					new Object[] { new Integer(index) });
 
 		} else if (action.equals("list")) {
 			Map list = new HashMap();
