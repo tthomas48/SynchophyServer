@@ -11,7 +11,17 @@ public class StringUtils {
 		if (workingString.startsWith("THE ")) {
 			original = original.substring(4) + ", The";
 		} else if (workingString.startsWith("A ")) {
-			original = original.substring(2) + ", A";			
+			original = original.substring(2) + ", A";
+		}
+		return original;
+	}
+
+	public static String unAlphabetizeLinguistically(String original) {
+		String workingString = original;
+		if (workingString.endsWith(", The")) {
+			original = "The " + original.substring(0, original.length() - 5);
+		} else if (workingString.endsWith(", A")) {
+			original = "A " + original.substring(0, original.length() - 3);
 		}
 		return original;
 	}
@@ -56,6 +66,33 @@ public class StringUtils {
 			return "";
 		}
 		return track + " - ";
+	}
+	
+	public static String extractTrack(String trackAndTitle) {
+		if(trackAndTitle.matches("^\\d+ - .*")) {
+			return cleanTrack(trackAndTitle.substring(0, trackAndTitle.indexOf(" - ")));
+		}
+		return cleanTrack("");
+	}
+	public static String extractTitle(String trackAndTitle) {
+		if(trackAndTitle.matches("^\\d+ - .*")) {
+			return trackAndTitle.substring(trackAndTitle.indexOf(" - ") + 3);
+		}
+		return trackAndTitle;
+	}
+	
+
+	public static void main(String[] args) {
+		System.err.println(StringUtils.extractTrack("My Track Name"));
+		System.err.println(StringUtils.extractTrack("1 Little Indian"));
+		System.err.println(StringUtils.extractTrack("1 - Little Indian"));
+		System.err.println(StringUtils.extractTrack("14 - Little Indian"));
+		System.err.println(StringUtils.extractTitle("My Track Name"));
+		System.err.println(StringUtils.extractTitle("1 Little Indian"));
+		System.err.println(StringUtils.extractTitle("1 - Little Indian"));
+		System.err.println(StringUtils.extractTitle("14 - Little Indian"));
+		
+
 	}
 
 }

@@ -13,6 +13,15 @@ public class StringUtilsTest extends TestCase {
     assertEquals("Hawk and a Handsaw, A",
                  StringUtils.alphabetizeLinguistically("A Hawk and a Handsaw"));
   }
+  
+  public void testunAlphabetizeLinguistically() {
+
+	    assertEquals("The Cure", StringUtils.unAlphabetizeLinguistically("Cure, The"));
+	    assertEquals("They Sing", StringUtils.unAlphabetizeLinguistically("They Sing"));
+	    assertEquals("A Hawk and a Handsaw",
+	                 StringUtils.unAlphabetizeLinguistically("Hawk and a Handsaw, A"));
+	  }
+  
 
 
   public void testSortLetter() {

@@ -2,6 +2,8 @@ package com.synchophy.server;
 
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -13,13 +15,16 @@ import com.synchophy.server.dispatch.AbstractDispatch;
 
 
 public class ControllerServlet extends HttpServlet {
+	private Map dispatchCache = new HashMap();
  
   public void doGet(HttpServletRequest request, HttpServletResponse response)
       throws IOException,
         ServletException {
 
     String dispatchKey = request.getPathInfo();
-    System.err.println(dispatchKey);
+    if(dispatchKey.equals("/player") == false) {
+    	System.err.println(dispatchKey);
+    }
     dispatchKey = dispatchKey.replace('/',' ').trim();
     //dispatchKey = dispatchKey.replaceFirst("/", "");
 
@@ -77,7 +82,7 @@ public class ControllerServlet extends HttpServlet {
   }
 
 
-  private static AbstractDispatch getDispatch(String dispatchKey) {
+  private AbstractDispatch getDispatch(String dispatchKey) {
 
     dispatchKey = dispatchKey.substring(0, 1).toUpperCase() + dispatchKey.substring(1);
     while (dispatchKey.indexOf('-') >= 0) {
@@ -86,10 +91,16 @@ public class ControllerServlet extends HttpServlet {
                                             dispatchKey.indexOf('-') + 2).toUpperCase()
                     + dispatchKey.substring(dispatchKey.indexOf('-') + 2);
     }
+    
+    if(dispatchCache.containsKey(dispatchKey)) {
+    	return (AbstractDispatch) dispatchCache.get(dispatchKey);
+    }
 
     try {
       Class clazz = Class.forName("com.synchophy.server.dispatch." + dispatchKey + "Dispatch");
-      return (AbstractDispatch) clazz.newInstance();
+      AbstractDispatch dispatch = (AbstractDispatch) clazz.newInstance();
+      dispatchCache.put(dispatchKey, dispatch);
+      return dispatch;
     } catch (ClassNotFoundException e) {
 
     } catch (IllegalAccessException e) {

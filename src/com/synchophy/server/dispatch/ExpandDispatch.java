@@ -51,9 +51,9 @@ public class ExpandDispatch extends AbstractDispatch {
 		}
 
 		String query = "select trim(LEADING '0' FROM s.title_sort) name, s.artist_sort artist, s.album_sort album, coalesce(ss.stick, 0) sticky "
-				+ "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
-				+ "  and (s.artist = ss.artist or ss.artist = '*') "
-				+ "  and (s.title = ss.name or ss.name = '*')) "
+				+ "from song s left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
+				+ "  and (s.artist_sort = ss.artist or ss.artist = '*') "
+				+ "  and (s.title_sort = ss.name or ss.name = '*')) "
 				+ " where s.album_sort = ? "
 				+ getFilter(filter)
 				+ artistFilter
@@ -72,9 +72,9 @@ public class ExpandDispatch extends AbstractDispatch {
 		return DatabaseManager
 				.getInstance()
 				.query("select s.album_sort, s.artist_sort, coalesce(ss.stick, 0) "
-						+ "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
-						+ "  and (s.artist = ss.artist or ss.artist = '*') "
-						+ "  and (s.title = ss.name or ss.name = '*')) "
+						+ "from song s left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
+						+ "  and (s.artist_sort = ss.artist or ss.artist = '*') "
+						+ "  and (s.title_sort = ss.name or ss.name = '*')) "
 						+ "where s.artist_sort = ? "
 						+ getFilter(filter)
 						+ "group by s.album_sort, s.artist_sort, coalesce(ss.stick, 0) "
@@ -88,10 +88,16 @@ public class ExpandDispatch extends AbstractDispatch {
 		return DatabaseManager
 				.getInstance()
 				.query("select s.artist_sort, coalesce(ss.stick, 0) "
-						+ "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
-						+ "  and (s.artist = ss.artist or ss.artist = '*') "
-						+ "  and (s.title = ss.name or ss.name = '*')) "
+						+ "from song s left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
+						+ "  and (s.artist_sort = ss.artist or ss.artist = '*') "
+						+ "  and (s.title_sort = ss.name or ss.name = '*')) "
 						+ "where s.artist_key = ? " + getFilter(filter)
+//						+ " and exists (select 'X' "
+//						+ "from song s1 left outer join sticky ss1"
+//						+ " on ((s1.album_sort = ss1.album or ss1.album = '*')"
+//						+ " and (s1.artist_sort = ss1.artist or ss1.artist = '*')"
+//						+ " and (s1.title_sort = ss1.name or ss1.name = '*'))"
+//						+ " where s.artist_sort = s1.artist_sort) "
 						+ "group by s.artist_sort, coalesce(ss.stick, 0) "
 						+ "order by upper(s.artist_sort)",
 						new String[] { value },
@@ -103,9 +109,9 @@ public class ExpandDispatch extends AbstractDispatch {
 		List albums = DatabaseManager
 				.getInstance()
 				.query("select album_sort, '', coalesce(ss.stick, 0) "
-						+ "from song s left outer join sticky ss on ((s.album = ss.album or ss.album = '*') "
-						+ "  and (s.artist = ss.artist or ss.artist = '*') "
-						+ "  and (s.title = ss.name or ss.name = '*')) "
+						+ "from song s left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
+						+ "  and (s.artist_sort = ss.artist or ss.artist = '*') "
+						+ "  and (s.title_sort = ss.name or ss.name = '*')) "
 						+ " where album_key = ? " + getFilter(filter)
 						+ "group by album_sort, coalesce(ss.stick, 0) "
 						+ "order by upper(album_sort)", new String[] { value },
@@ -113,5 +119,4 @@ public class ExpandDispatch extends AbstractDispatch {
 		System.err.println(albums);
 		return albums;
 	}
-
 }

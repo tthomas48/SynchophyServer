@@ -2,6 +2,7 @@ package com.synchophy.server;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import com.synchophy.server.db.DatabaseManager;
 import com.synchophy.server.player.CommandLineMediaPlayer;
@@ -16,9 +17,13 @@ public class PlayerManager {
 	private boolean playable;
 	private boolean done;
 	protected boolean paused;
+	private boolean random;
+	private boolean continuous;
 	private Thread playThread;
 	private int position;
 	private IMediaPlayer player;
+	private static Random generator = new Random();
+	private String currentFilename;
 
 	private PlayerManager() {
 
@@ -58,10 +63,10 @@ public class PlayerManager {
 							running = false;
 						}
 					}
-					if(!running) {
+					if (!running) {
 						continue;
 					}
-					
+
 					playList();
 				}
 			}
@@ -79,9 +84,19 @@ public class PlayerManager {
 
 	private String getNextFilename() {
 		List queue = DatabaseManager.getInstance().loadQueueFiles();
+		if (random) {
+			int next = generator.nextInt(queue.size());
+			currentFilename = (String) ((Map) queue.get(next)).get("file");
+			return currentFilename;
+		}
+		
+		if(position > queue.size() && continuous) {
+			position = 0;
+		}
+
 		if (queue.size() > position) {
-			String filename = (String) ((Map) queue.get(position)).get("file");
-			return filename;
+			currentFilename = (String) ((Map) queue.get(position)).get("file");
+			return currentFilename;
 		}
 		return null;
 	}
@@ -219,15 +234,10 @@ public class PlayerManager {
 
 	public Map getCurrentSong() {
 
-		List queue = DatabaseManager.getInstance().loadQueueFiles();
-		if (position >= queue.size()) {
-			return null;
-		}
-		String song = (String) ((Map) queue.get(position)).get("file");
 		List list = DatabaseManager
 				.getInstance()
 				.query("select trim(LEADING '0' FROM title_sort), artist_sort, album_sort from song where file = ?",
-						new Object[] { song },
+						new Object[] { currentFilename },
 						new String[] { "name", "artist", "album" });
 		if (list.size() > 0) {
 			return (Map) list.get(0);
@@ -259,5 +269,17 @@ public class PlayerManager {
 
 	public Object getPauseLock() {
 		return pause;
+	}
+	public Boolean isRandom() {
+		return Boolean.valueOf(random);
+	}
+	public void toggleRandom() {
+		this.random = !this.random;
+	}
+	public Boolean isContinuous() {
+		return Boolean.valueOf(continuous);
+	}
+	public void toggleContinuous() {
+		this.continuous = !continuous;
 	}
 }
