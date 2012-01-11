@@ -2,15 +2,14 @@ package com.synchophy.server.scanner;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
-import java.util.logging.Level;
-
-import org.farng.mp3.LogFormatter;
+import java.lang.reflect.Method;
 
 import com.synchophy.server.scanner.tag.ITagProvider;
 import com.synchophy.server.scanner.tag.Mp3OnlyTagProvider;
 
 public class TaggedFile {
 	private static Constructor tagConstructor;
+	public static String[] supportedExts = new String[0];
 	static {
 		String tagProviderClassname = System.getProperty("tag.provider",
 				Mp3OnlyTagProvider.class.getName());
@@ -19,6 +18,8 @@ public class TaggedFile {
 			Class tagProviderClass = Class.forName(tagProviderClassname);
 			tagConstructor = tagProviderClass
 					.getConstructor(new Class[] { File.class });
+			Method formats = tagProviderClass.getMethod("formats", new Class[0]);
+			supportedExts = (String[]) formats.invoke(null, new Object[0]);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -80,5 +81,9 @@ public class TaggedFile {
 
 	public void setTrack(String track) {
 		tag.setTrack(track);
+	}
+	
+	public static String[] formats() {
+		return supportedExts;
 	}
 }

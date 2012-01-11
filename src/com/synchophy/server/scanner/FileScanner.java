@@ -7,6 +7,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.farng.mp3.AbstractMP3Tag;
 import org.farng.mp3.MP3File;
@@ -26,8 +28,7 @@ public class FileScanner {
 	private PreparedStatement errorSth;
 	private int batchSize = 0;
 	private int errorBatchSize = 0;
-	//private static final String[] supportedExts = new String[] {"MP3","M4A","MP4","MP4P","OGG","WMA"};
-	private static final String[] supportedExts = new String[] {"MP3"};
+	private static final String[] supportedExts = TaggedFile.formats(); 
 
 	public FileScanner(String basePath) {
 
@@ -262,6 +263,7 @@ public class FileScanner {
 	}
 
 	public static void main(String[] args) {
+		Logger.global.setLevel(Level.SEVERE);
 
 		try {
 			String musicPath = System.getProperty("music.path", "./Music");

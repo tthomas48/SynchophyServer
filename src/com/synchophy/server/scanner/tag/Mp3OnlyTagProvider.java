@@ -25,21 +25,27 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.synchophy.server.scanner.tag.ITagProvider#isParsed()
 	 */
 	public boolean isParsed() {
 		return tag != null;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.synchophy.server.scanner.tag.ITagProvider#getAlbum()
 	 */
 	public String getAlbum() {
 		return tag.getAlbum();
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.synchophy.server.scanner.tag.ITagProvider#getArtist()
 	 */
 	public String getArtist() {
@@ -47,7 +53,9 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 		return tag.getArtist();
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.synchophy.server.scanner.tag.ITagProvider#getTitle()
 	 */
 	public String getTitle() {
@@ -56,7 +64,9 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.synchophy.server.scanner.tag.ITagProvider#getTrack()
 	 */
 	public String getTrack() {
@@ -67,8 +77,11 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 		return "0";
 	}
 
-	/* (non-Javadoc)
-	 * @see com.synchophy.server.scanner.tag.ITagProvider#setAlbum(java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.synchophy.server.scanner.tag.ITagProvider#setAlbum(java.lang.String)
 	 */
 	public void setAlbum(String album) {
 		try {
@@ -79,8 +92,11 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.synchophy.server.scanner.tag.ITagProvider#setArtist(java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.synchophy.server.scanner.tag.ITagProvider#setArtist(java.lang.String)
 	 */
 	public void setArtist(String artist) {
 		try {
@@ -91,8 +107,11 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.synchophy.server.scanner.tag.ITagProvider#setTitle(java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.synchophy.server.scanner.tag.ITagProvider#setTitle(java.lang.String)
 	 */
 	public void setTitle(String title) {
 		try {
@@ -103,8 +122,11 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.synchophy.server.scanner.tag.ITagProvider#setTrack(java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.synchophy.server.scanner.tag.ITagProvider#setTrack(java.lang.String)
 	 */
 	public void setTrack(String track) {
 		try {
@@ -117,4 +139,8 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 		}
 	}
 
+	public static String[] formats() {
+		// TODO Auto-generated method stub
+		return new String[] { "MP3" };
+	}
 }

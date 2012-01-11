@@ -2,22 +2,22 @@ package com.synchophy.server.scanner.tag;
 
 public interface ITagProvider {
 
-	public abstract boolean isParsed();
+	public boolean isParsed();
 
-	public abstract String getAlbum();
+	public String getAlbum();
 
-	public abstract String getArtist();
+	public String getArtist();
 
-	public abstract String getTitle();
+	public String getTitle();
 
-	public abstract String getTrack();
+	public String getTrack();
 
-	public abstract void setAlbum(String album);
+	public void setAlbum(String album);
 
-	public abstract void setArtist(String artist);
+	public void setArtist(String artist);
 
-	public abstract void setTitle(String title);
+	public void setTitle(String title);
 
-	public abstract void setTrack(String track);
+	public void setTrack(String track);
 
 }

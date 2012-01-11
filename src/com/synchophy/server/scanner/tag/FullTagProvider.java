@@ -79,4 +79,8 @@ public class FullTagProvider implements ITagProvider {
 			e.printStackTrace();
 		}
 	}
+	
+	public static String[] formats() {
+		return new String[] {"MP3","M4A","MP4","MP4P","OGG","WMA"};
+	}
 }
