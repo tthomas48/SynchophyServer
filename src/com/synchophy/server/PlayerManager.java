@@ -233,6 +233,23 @@ public class PlayerManager {
 	}
 
 	public Map getCurrentSong() {
+		
+		if(currentFilename == null) {
+			return null;
+		}
+		
+		if(currentFilename.startsWith("http://")) {
+			// TODO: It would be cool to be able to look up what the current song is
+			List list = DatabaseManager
+					.getInstance()
+					.query("select '', name, 'Internet Radio' from station where url = ?",
+							new Object[] { currentFilename },
+							new String[] { "name", "artist", "album" });
+			if (list.size() > 0) {
+				return (Map) list.get(0);
+			}
+			return null;
+		}
 
 		List list = DatabaseManager
 				.getInstance()

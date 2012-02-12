@@ -70,9 +70,13 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 		} catch (IOException e) {
 			System.err.println("Unable to write command " + command);
 			e.printStackTrace();
-			remoteThread.interrupt();
+			if(remoteThread != null) {
+				remoteThread.interrupt();
+			}
 			try {
-				remoteThread.join();
+				if(remoteThread != null) {
+					remoteThread.join();
+				}
 			} catch (InterruptedException ie) {
 
 			}

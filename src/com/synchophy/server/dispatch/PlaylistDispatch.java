@@ -71,11 +71,26 @@ public class PlaylistDispatch extends AbstractDispatch {
 				PlayerManager.getInstance().select(startPosition);
 				PlayerManager.getInstance().play();
 			}
+		} else if (action.equals("add-station")) {
+			String station = getRequiredParameter(request, "station");
+
+			int startPosition = DatabaseManager.getInstance().loadQueueMax();
+			int index = startPosition + 1;
+
+			System.err.println("Inserting into queue [" + new Integer(index)
+					+ "]" + station);
+			DatabaseManager.getInstance().executeQuery(
+					"insert into queue (index, file) values (?, ?)",
+					new Object[] { new Integer(index), station });
+
+			PlayerManager.getInstance().select(startPosition);
+			PlayerManager.getInstance().play();
+
 		} else if (action.equals("add-tag")) {
 			String tag = getRequiredParameter(request, "tag");
 			boolean play = Boolean.valueOf(
 					getRequiredParameter(request, "play")).booleanValue();
-			
+
 			List tracks = DatabaseManager.getInstance().loadTracksForTag(tag);
 
 			int startPosition = DatabaseManager.getInstance().loadQueueMax();
@@ -127,5 +142,4 @@ public class PlaylistDispatch extends AbstractDispatch {
 		}
 		return Boolean.TRUE;
 	}
-
 }
