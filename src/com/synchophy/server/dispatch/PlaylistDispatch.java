@@ -10,12 +10,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.synchophy.server.PlayerManager;
+import com.synchophy.server.User;
 import com.synchophy.server.db.DatabaseManager;
 
 public class PlaylistDispatch extends AbstractDispatch {
 
 	public Object execute(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
+
+		User user = getCurrentUser(request);
 
 		String action = getRequiredParameter(request, "a");
 		if (action.equals("add")) {
@@ -60,11 +63,16 @@ public class PlaylistDispatch extends AbstractDispatch {
 			for (int i = 0; i < toAdd.size(); i++) {
 				System.err.println("Inserting into queue ["
 						+ new Integer(index + i) + "]"
-						+ (String) ((Map) toAdd.get(i)).get("file"));
-				DatabaseManager.getInstance().executeQuery(
-						"insert into queue (index, file) values (?, ?)",
-						new Object[] { new Integer(index + i),
-								(String) ((Map) toAdd.get(i)).get("file") });
+						+ (String) ((Map) toAdd.get(i)).get("file") + ":" + user.getId());
+				DatabaseManager
+						.getInstance()
+						.executeQuery(
+								"insert into queue (index, file, user_id) values (?, ?, ?)",
+								new Object[] {
+										new Integer(index + i),
+										(String) ((Map) toAdd.get(i))
+												.get("file"),
+										new Long(user.getId()) });
 
 			}
 			if (play) {
@@ -79,9 +87,12 @@ public class PlaylistDispatch extends AbstractDispatch {
 
 			System.err.println("Inserting into queue [" + new Integer(index)
 					+ "]" + station);
-			DatabaseManager.getInstance().executeQuery(
-					"insert into queue (index, file) values (?, ?)",
-					new Object[] { new Integer(index), station });
+			DatabaseManager
+					.getInstance()
+					.executeQuery(
+							"insert into queue (index, file, user_id) values (?, ?, ?)",
+							new Object[] { new Integer(index), station,
+									new Long(user.getId()) });
 
 			PlayerManager.getInstance().select(startPosition);
 			PlayerManager.getInstance().play();
@@ -100,10 +111,15 @@ public class PlaylistDispatch extends AbstractDispatch {
 				System.err.println("Inserting into queue ["
 						+ new Integer(index + i) + "]"
 						+ (String) ((Map) tracks.get(i)).get("file"));
-				DatabaseManager.getInstance().executeQuery(
-						"insert into queue (index, file) values (?, ?)",
-						new Object[] { new Integer(index + i),
-								(String) ((Map) tracks.get(i)).get("file") });
+				DatabaseManager
+						.getInstance()
+						.executeQuery(
+								"insert into queue (index, file, user_id) values (?, ?, ?)",
+								new Object[] {
+										new Integer(index + i),
+										(String) ((Map) tracks.get(i))
+												.get("file"),
+										new Long(user.getId()) });
 
 			}
 			if (play) {

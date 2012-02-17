@@ -8,7 +8,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.gson.Gson;
+import com.synchophy.server.ControllerServlet;
 import com.synchophy.server.ParamException;
+import com.synchophy.server.User;
 
 
 public abstract class AbstractDispatch {
@@ -61,6 +63,11 @@ public abstract class AbstractDispatch {
       return defaultValue;
     }
     return value;
+  }
+  
+  public User getCurrentUser(HttpServletRequest request) {
+	  
+	  return ControllerServlet.getCurrentUser(request);
   }
 
 }

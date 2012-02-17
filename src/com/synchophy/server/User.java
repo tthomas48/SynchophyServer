@@ -23,6 +23,18 @@ public class User {
 		this.username = username;
 	}
 
+	public static User load(int id) {
+		List rows = DatabaseManager.getInstance().query(
+				"select id, username from users where id = ?",
+				new Object[] { new Integer(id) });
+		if (rows.size() != 1) {
+			return null;
+		}
+		Map row = (Map) rows.get(0);
+		return new User(((Integer) row.get("ID")).longValue(),
+				(String) row.get("USERNAME"));
+	}
+
 	public static User load(String token) {
 		List rows = DatabaseManager.getInstance().query(
 				"select id, username from users where token = ?",

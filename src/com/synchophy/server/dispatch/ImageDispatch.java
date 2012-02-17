@@ -8,18 +8,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.farng.mp3.AbstractMP3FragmentBody;
-import org.farng.mp3.MP3File;
-import org.farng.mp3.id3.AbstractID3v2;
-import org.farng.mp3.id3.AbstractID3v2Frame;
-
+import com.synchophy.server.MetricManager;
 import com.synchophy.server.db.DatabaseManager;
 import com.synchophy.util.StringUtils;
 
@@ -29,7 +24,9 @@ import de.umass.lastfm.ImageSize;
 import de.umass.lastfm.cache.FileSystemCache;
 
 public class ImageDispatch extends AbstractDispatch {
-	public static final String LASTFM_API_KEY = "9e91826464c3707512f7856dcd57e15f";
+	
+	private MetricManager metricManager = new MetricManager();
+	
 	static {
 		String musicPath = System.getProperty("music.path", "./Music");
 		File cachedir = new File(musicPath, ".lastfm-cache");
@@ -72,7 +69,7 @@ public class ImageDispatch extends AbstractDispatch {
 		}
 		Album albumObj = Album.getInfo(
 				StringUtils.unAlphabetizeLinguistically(artist),
-				StringUtils.unAlphabetizeLinguistically(album), LASTFM_API_KEY);
+				StringUtils.unAlphabetizeLinguistically(album), metricManager.getLastFmApiKey());
 		if (albumObj != null && filepath != null) {
 			InputStream is = new URL(albumObj.getImageURL(ImageSize.LARGE))
 					.openStream();

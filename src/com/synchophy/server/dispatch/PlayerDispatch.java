@@ -32,6 +32,9 @@ public class PlayerDispatch extends AbstractDispatch {
 		} else if (action.equals("select")) {
 			int index = Integer.parseInt(getRequiredParameter(request, "i"));
 			PlayerManager.getInstance().select(index);
+			if(!PlayerManager.getInstance().isPlaying().booleanValue()) {
+				PlayerManager.getInstance().play();
+			}
 		} else if (action.equals("random")) {
 			PlayerManager.getInstance().toggleRandom();
 		} else if (action.equals("continuous")) {

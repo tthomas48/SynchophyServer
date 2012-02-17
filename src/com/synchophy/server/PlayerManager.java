@@ -24,6 +24,7 @@ public class PlayerManager {
 	private IMediaPlayer player;
 	private static Random generator = new Random();
 	private String currentFilename;
+	private MetricManager metricManager;
 
 	private PlayerManager() {
 
@@ -42,6 +43,7 @@ public class PlayerManager {
 						+ playerClass);
 			}
 			player = (IMediaPlayer) obj;
+			metricManager = new MetricManager();
 
 		} catch (Exception e) {
 			throw new RuntimeException(
@@ -49,8 +51,12 @@ public class PlayerManager {
 					e);
 		}
 
+		// by default we play forever
+		continuous = true;
+		
 		setPosition(0);
 		running = true;
+		done = true;
 		playThread = new Thread("PlayThread") {
 
 			public void run() {
@@ -89,8 +95,8 @@ public class PlayerManager {
 			currentFilename = (String) ((Map) queue.get(next)).get("file");
 			return currentFilename;
 		}
-		
-		if(position > queue.size() && continuous) {
+
+		if (position > queue.size() && continuous) {
 			position = 0;
 		}
 
@@ -102,6 +108,7 @@ public class PlayerManager {
 	}
 
 	public void next() {
+		metricManager.next(currentFilename);
 
 		int p = this.position;
 		p++;
@@ -113,6 +120,7 @@ public class PlayerManager {
 	}
 
 	public void previous() {
+		metricManager.previous(currentFilename);
 
 		int p = this.position;
 		p--;
@@ -123,18 +131,19 @@ public class PlayerManager {
 	}
 
 	public void first() {
+		metricManager.first(currentFilename);
 
 		setPosition(0);
 	}
 
 	public void last() {
+		metricManager.last(currentFilename);
 
 		List queue = DatabaseManager.getInstance().loadQueueFiles();
 		setPosition(queue.size() - 1);
 	}
 
 	public void select(int index) {
-
 		List queue = DatabaseManager.getInstance().loadQueueFiles();
 		int p = index;
 		if (p < 0) {
@@ -144,6 +153,8 @@ public class PlayerManager {
 			p = queue.size() - 1;
 		}
 		setPosition(p);
+
+		metricManager.select(currentFilename);
 	}
 
 	private void playList() {
@@ -160,8 +171,14 @@ public class PlayerManager {
 						playable = false;
 						continue;
 					}
+					User user = this.getCurrentSongUser();
+					Map song = this.getCurrentScrobbleInfo();
+
 					System.err.println("Playing " + filename);
+					metricManager.started(filename);
 					playable = player.notifyPlay(filename);
+
+					metricManager.finished(filename, user, song);
 				} catch (Exception e) {
 					e.printStackTrace();
 					break;
@@ -233,13 +250,14 @@ public class PlayerManager {
 	}
 
 	public Map getCurrentSong() {
-		
-		if(currentFilename == null) {
+
+		if (currentFilename == null) {
 			return null;
 		}
-		
-		if(currentFilename.startsWith("http://")) {
-			// TODO: It would be cool to be able to look up what the current song is
+
+		if (currentFilename.startsWith("http://")) {
+			// TODO: It would be cool to be able to look up what the current
+			// song is
 			List list = DatabaseManager
 					.getInstance()
 					.query("select '', name, 'Internet Radio' from station where url = ?",
@@ -260,6 +278,35 @@ public class PlayerManager {
 			return (Map) list.get(0);
 		}
 		return null;
+	}
+
+	public User getCurrentSongUser() {
+		List queue = DatabaseManager.getInstance().loadQueueFiles();
+		if (position > queue.size()) {
+			return null;
+		}
+		Map song = (Map) queue.get(position);
+		return User.load(((Integer) song.get("user_id")).intValue());
+	}
+
+	public Map getCurrentScrobbleInfo() {
+		if (currentFilename == null) {
+			return null;
+		}
+
+		if (currentFilename.startsWith("http://")) {
+			return null;
+		}
+
+		List list = DatabaseManager.getInstance().query(
+				"select title, artist, album from song where file = ?",
+				new Object[] { currentFilename },
+				new String[] { "name", "artist", "album" });
+		if (list.size() > 0) {
+			return (Map) list.get(0);
+		}
+		return null;
+
 	}
 
 	public Boolean isPlaying() {
@@ -287,15 +334,19 @@ public class PlayerManager {
 	public Object getPauseLock() {
 		return pause;
 	}
+
 	public Boolean isRandom() {
 		return Boolean.valueOf(random);
 	}
+
 	public void toggleRandom() {
 		this.random = !this.random;
 	}
+
 	public Boolean isContinuous() {
 		return Boolean.valueOf(continuous);
 	}
+
 	public void toggleContinuous() {
 		this.continuous = !continuous;
 	}
