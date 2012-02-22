@@ -43,27 +43,31 @@ public class ImageDispatch extends AbstractDispatch {
 	public Object execute(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
 
-		String album = getRequiredParameter(request, "album");
-		String artist = getRequiredParameter(request, "artist");
+		String action = getRequiredParameter(request, "a");
+		if ("view".equals(action)) {
+			String album = getRequiredParameter(request, "album");
+			String artist = getRequiredParameter(request, "artist");
 
-		List files = DatabaseManager
-				.getInstance()
-				.query("select file from song where artist_sort = ? and album_sort = ?",
-						new Object[] { artist, album }, new String[] { "file" });
-		System.err.println("Found " + files.size() + " files.");
+			List files = DatabaseManager
+					.getInstance()
+					.query("select file from song where artist_sort = ? and album_sort = ?",
+							new Object[] { artist, album },
+							new String[] { "file" });
+			System.err.println("Found " + files.size() + " files.");
 
-		String filepath = null;
-		for (int i = 0; i < files.size(); i++) {
-			String filename = (String) ((Map) files.get(i)).get("file");
-			filepath = filename.substring(0,
-					filename.lastIndexOf(File.separator));
-			for (int j = 0; j < coverFilenames.length; j++) {
-				System.err.println("Checking "
-						+ new File(filepath, coverFilenames[j])
-								.getAbsolutePath());
-				if (new File(filepath, coverFilenames[j]).exists()) {
-					return new File(filepath, coverFilenames[j]);
+			String filepath = null;
+			for (int i = 0; i < files.size(); i++) {
+				String filename = (String) ((Map) files.get(i)).get("file");
+				filepath = filename.substring(0,
+						filename.lastIndexOf(File.separator));
+				for (int j = 0; j < coverFilenames.length; j++) {
+					System.err.println("Checking "
+							+ new File(filepath, coverFilenames[j])
+									.getAbsolutePath());
+					if (new File(filepath, coverFilenames[j]).exists()) {
+						return new File(filepath, coverFilenames[j]);
 
+					}
 				}
 			}
 		}
@@ -90,7 +94,12 @@ public class ImageDispatch extends AbstractDispatch {
 					is.close();
 				}
 			}
-
+			return new File("./image/nocover.png");
+		} else if ("list".equals(action)) {
+			return DatabaseManager
+					.getInstance()
+					.query("select artist, album from song group by artist_sort, artist, album_sort, album order by artist_sort, album_sort",
+							new Object[0], new String[] { "artist", "album" });
 		}
 
 		return null;
@@ -101,7 +110,12 @@ public class ImageDispatch extends AbstractDispatch {
 
 		File filepath = null;
 		try {
-			filepath = (File) execute(request, response);
+			Object obj = execute(request, response);
+			if (obj instanceof File == false) {
+				writeJSON(obj, response);
+				return;
+			}
+			filepath = (File) obj;
 		} catch (RuntimeException e) {
 			e.printStackTrace();
 			response.setStatus(500);

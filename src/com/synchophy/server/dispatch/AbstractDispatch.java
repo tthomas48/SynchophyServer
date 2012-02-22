@@ -30,13 +30,17 @@ public abstract class AbstractDispatch {
       response.setStatus(500);
       ((HashMap) output).put("error", e.getMessage());
     }
+    writeJSON(output, response);
 
-    Gson gson = new Gson();
-    String json = gson.toJson(output);
+  }
+  
+  protected void writeJSON(Object output, HttpServletResponse response) throws IOException {
+	    Gson gson = new Gson();
+	    String json = gson.toJson(output);
 
-    response.setHeader("Content-Type", "application/json");
-    response.getWriter().write(json);
-    response.getWriter().flush();
+	    response.setHeader("Content-Type", "application/json");
+	    response.getWriter().write(json);
+	    response.getWriter().flush();	  
   }
 
 

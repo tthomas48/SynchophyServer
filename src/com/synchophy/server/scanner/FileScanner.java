@@ -54,7 +54,7 @@ public class FileScanner {
 
 		executeBatch();
 		executeErrorBatch();
-
+		
 		String deleteSQL = "DELETE FROM song where file not in (select file from IMPORT)";
 		DatabaseManager.getInstance().executeQuery(deleteSQL);
 

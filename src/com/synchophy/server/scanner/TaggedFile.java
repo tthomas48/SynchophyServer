@@ -64,7 +64,7 @@ public class TaggedFile {
 	}
 
 	public String getTrack() {
-		return tag.getTitle();
+		return tag.getTrack();
 	}
 
 	public void setAlbum(String album) {
