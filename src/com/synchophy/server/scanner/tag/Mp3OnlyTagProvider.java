@@ -1,16 +1,18 @@
 package com.synchophy.server.scanner.tag;
 
 import java.io.File;
-import java.util.logging.Level;
 
-import org.farng.mp3.LogFormatter;
+import org.farng.mp3.AbstractMP3Fragment;
+import org.farng.mp3.AbstractMP3FragmentBody;
 import org.farng.mp3.MP3File;
+import org.farng.mp3.id3.AbstractID3v2;
 import org.farng.mp3.id3.ID3v1;
 import org.farng.mp3.id3.ID3v1_1;
 
 public class Mp3OnlyTagProvider implements ITagProvider {
 	private MP3File f;
 	private ID3v1 tag;
+	private AbstractID3v2 tag2;
 
 	public Mp3OnlyTagProvider(File file) {
 		tag = null;
@@ -19,8 +21,12 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 			if (f.hasID3v1Tag()) {
 				tag = f.getID3v1Tag();
 			}
+			if (f.hasID3v2Tag()) {
+				tag2 = f.getID3v2TagAsv24();
+			}
 		} catch (Exception e) {
 			tag = null;
+			// tag2 = null;
 			e.printStackTrace();
 		}
 	}
@@ -31,16 +37,36 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 	 * @see com.synchophy.server.scanner.tag.ITagProvider#isParsed()
 	 */
 	public boolean isParsed() {
-		return tag != null;
+		return tag != null || tag2 != null;
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * 
 	 * @see com.synchophy.server.scanner.tag.ITagProvider#getAlbum()
 	 */
 	public String getAlbum() {
-		return tag.getAlbum();
+		if (tag != null) {
+			String album = tag.getAlbum();
+			if (album != null && !album.trim().equals("")) {
+				return album;
+			}
+		}
+
+		if (tag2 != null) {
+			Object frameObj = tag2.getFrame("TALB");
+			if (frameObj != null && frameObj instanceof AbstractMP3Fragment) {
+				AbstractMP3Fragment frame = (AbstractMP3Fragment) frameObj;
+				AbstractMP3FragmentBody body = frame.getBody();
+				if (body != null) {
+					String bodyText = (String) body.getObjectValue("Text");
+					if (bodyText != null) {
+						return bodyText.trim();
+					}
+				}
+			}
+		}
+		return "";
 	}
 
 	/*
@@ -50,7 +76,28 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 	 */
 	public String getArtist() {
 
-		return tag.getArtist();
+		if (tag != null) {
+			String artist = tag.getArtist();
+			if (artist != null && !artist.trim().equals("")) {
+				return artist;
+			}
+		}
+
+		if (tag2 != null) {
+			Object frameObj = tag2.getFrame("TPE1");
+			if (frameObj != null && frameObj instanceof AbstractMP3Fragment) {
+				AbstractMP3Fragment frame = (AbstractMP3Fragment) frameObj;
+				AbstractMP3FragmentBody body = frame.getBody();
+				if (body != null) {
+					String bodyText = (String) body.getObjectValue("Text");
+					if (bodyText != null) {
+						return bodyText.trim();
+					}
+				}
+			}
+		}
+		return "";
+
 	}
 
 	/*
@@ -59,9 +106,28 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 	 * @see com.synchophy.server.scanner.tag.ITagProvider#getTitle()
 	 */
 	public String getTitle() {
+		
+		if (tag != null) {
+			String title = tag.getTitle();
+			if (title != null && !title.trim().equals("")) {
+				return title;
+			}
+		}
 
-		return tag.getTitle();
-
+		if (tag2 != null) {
+			Object frameObj = tag2.getFrame("TIT2");
+			if (frameObj != null && frameObj instanceof AbstractMP3Fragment) {
+				AbstractMP3Fragment frame = (AbstractMP3Fragment) frameObj;
+				AbstractMP3FragmentBody body = frame.getBody();
+				if (body != null) {
+					String bodyText = (String) body.getObjectValue("Text");
+					if (bodyText != null) {
+						return bodyText.trim();
+					}
+				}
+			}
+		}
+		return "";
 	}
 
 	/*
@@ -71,8 +137,25 @@ public class Mp3OnlyTagProvider implements ITagProvider {
 	 */
 	public String getTrack() {
 
-		if (tag instanceof ID3v1_1) {
-			return ((ID3v1_1) tag).getTrack();
+		if (tag != null && tag instanceof ID3v1_1) {
+			String track = ((ID3v1_1)tag).getTrack();
+			if (track != null && !track.trim().equals("")) {
+				return track;
+			}
+		}
+
+		if (tag2 != null) {
+			Object frameObj = tag2.getFrame("TRCK");
+			if (frameObj != null && frameObj instanceof AbstractMP3Fragment) {
+				AbstractMP3Fragment frame = (AbstractMP3Fragment) frameObj;
+				AbstractMP3FragmentBody body = frame.getBody();
+				if (body != null) {
+					String bodyText = (String) body.getObjectValue("Text");
+					if (bodyText != null) {
+						return bodyText.trim();
+					}
+				}
+			}
 		}
 		return "0";
 	}

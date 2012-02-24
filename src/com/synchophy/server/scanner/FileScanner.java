@@ -263,10 +263,12 @@ public class FileScanner {
 	}
 
 	public static void main(String[] args) {
+		// does not have track info. Attempt filename parsing
+		// /home/tthomas/MUSIC/Clinic/Winchester Cathedral/07 - clinic - winchester_cathedral -.mp3'
 		Logger.global.setLevel(Level.SEVERE);
 
 		try {
-			String musicPath = System.getProperty("music.path", "./Music");
+			String musicPath = System.getProperty("music.path", "/Music");
 			Date start = new Date();
 			FileScanner scanner = new FileScanner(musicPath);
 			scanner.scan();
