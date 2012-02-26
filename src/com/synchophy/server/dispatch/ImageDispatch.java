@@ -24,9 +24,9 @@ import de.umass.lastfm.ImageSize;
 import de.umass.lastfm.cache.FileSystemCache;
 
 public class ImageDispatch extends AbstractDispatch {
-	
+
 	private MetricManager metricManager = new MetricManager();
-	
+
 	static {
 		String musicPath = System.getProperty("music.path", "./Music");
 		File cachedir = new File(musicPath, ".lastfm-cache");
@@ -70,39 +70,57 @@ public class ImageDispatch extends AbstractDispatch {
 					}
 				}
 			}
-		}
-		Album albumObj = Album.getInfo(
-				StringUtils.unAlphabetizeLinguistically(artist),
-				StringUtils.unAlphabetizeLinguistically(album), metricManager.getLastFmApiKey());
-		if (albumObj != null && filepath != null) {
-			InputStream is = new URL(albumObj.getImageURL(ImageSize.LARGE))
-					.openStream();
-			try {
-				System.err.println("Attempting to write last.fm image to "
-						+ filepath + "/album.jpg");
-				File npic = new File(filepath + "/album.jpg");
-				npic.createNewFile();
-				FileOutputStream fos = new FileOutputStream(npic);
-				int in = -1;
-				while ((in = is.read()) != -1) {
-					fos.write(in);
-				}
-				fos.close();
-				return npic;
-			} finally {
-				if (is != null) {
-					is.close();
+			Album albumObj = Album.getInfo(
+					StringUtils.unAlphabetizeLinguistically(StringUtils.unAlphabetizeLinguistically(artist)),
+					StringUtils.unAlphabetizeLinguistically(StringUtils.unAlphabetizeLinguistically(album)),
+					metricManager.getLastFmApiKey());
+			if (albumObj != null && filepath != null) {
+				InputStream is = new URL(albumObj.getImageURL(ImageSize.LARGE))
+						.openStream();
+				try {
+					System.err.println("Attempting to write last.fm image to "
+							+ filepath + "/album.jpg");
+					File npic = new File(filepath + "/album.jpg");
+					npic.createNewFile();
+					FileOutputStream fos = new FileOutputStream(npic);
+					int in = -1;
+					while ((in = is.read()) != -1) {
+						fos.write(in);
+					}
+					fos.close();
+					return npic;
+				} finally {
+					if (is != null) {
+						is.close();
+					}
 				}
 			}
 			return new File("./image/nocover.png");
 		} else if ("list".equals(action)) {
+			boolean filter = Boolean.valueOf(
+					getRequiredParameter(request, "filter")).booleanValue();
+
 			return DatabaseManager
 					.getInstance()
-					.query("select artist, album from song group by artist_sort, artist, album_sort, album order by artist_sort, album_sort",
+					.query(" select s.artist, s.album "
+							+ "  from song s"
+							+ "       left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
+							+ "       and (s.artist_sort = ss.artist or ss.artist = '*')"
+							+ "       and (s.title_sort = ss.name or ss.name = '*'))"
+							+ getFilter(filter)
+							+ " group by s.artist_sort, s.artist, s.album_sort, s.album "
+							+ " order by s.artist_sort, s.album_sort",
 							new Object[0], new String[] { "artist", "album" });
 		}
 
 		return null;
+	}
+
+	private String getFilter(boolean filter) {
+		if (!filter) {
+			return "";
+		}
+		return "  where coalesce(ss.stick, 0) >= 0 ";
 	}
 
 	public void write(HttpServletRequest request, HttpServletResponse response)
