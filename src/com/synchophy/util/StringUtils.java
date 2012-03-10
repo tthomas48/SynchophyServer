@@ -1,5 +1,7 @@
 package com.synchophy.util;
 
+import java.util.regex.Pattern;
+
 public class StringUtils {
 
 	private static final char[] caps = new char[] { 'A', 'B', 'C', 'D', 'E',
@@ -69,13 +71,13 @@ public class StringUtils {
 	}
 	
 	public static String extractTrack(String trackAndTitle) {
-		if(trackAndTitle.matches("^\\d+ - .*")) {
+		if(Pattern.matches("^\\d+ - .*", trackAndTitle)) {
 			return cleanTrack(trackAndTitle.substring(0, trackAndTitle.indexOf(" - ")));
 		}
 		return cleanTrack("");
 	}
 	public static String extractTitle(String trackAndTitle) {
-		if(trackAndTitle.matches("^\\d+ - .*")) {
+		if(Pattern.matches("^\\d+ - .*", trackAndTitle)) {
 			return trackAndTitle.substring(trackAndTitle.indexOf(" - ") + 3);
 		}
 		return trackAndTitle;

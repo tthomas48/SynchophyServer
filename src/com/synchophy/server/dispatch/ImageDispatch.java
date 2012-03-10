@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.synchophy.server.MetricManager;
 import com.synchophy.server.db.DatabaseManager;
+import com.synchophy.server.scanner.AlbumArtScanner;
 import com.synchophy.util.StringUtils;
 
 import de.umass.lastfm.Album;
@@ -25,8 +26,6 @@ import de.umass.lastfm.cache.FileSystemCache;
 
 public class ImageDispatch extends AbstractDispatch {
 
-	private MetricManager metricManager = new MetricManager();
-
 	static {
 		String musicPath = System.getProperty("music.path", "./Music");
 		File cachedir = new File(musicPath, ".lastfm-cache");
@@ -35,10 +34,6 @@ public class ImageDispatch extends AbstractDispatch {
 		}
 		Caller.getInstance().setCache(new FileSystemCache(cachedir));
 	}
-
-	private static final String[] coverFilenames = new String[] { "album.jpg",
-			"album.png", "cover.jpg", "cover.png", "AlbumArtSmall.jpg",
-			"AlbumArtSmall.png", "Folder.jpg", "Folder.png" };
 
 	public Object execute(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
@@ -54,45 +49,12 @@ public class ImageDispatch extends AbstractDispatch {
 							new Object[] { artist, album },
 							new String[] { "file" });
 			System.err.println("Found " + files.size() + " files.");
-
-			String filepath = null;
 			for (int i = 0; i < files.size(); i++) {
 				String filename = (String) ((Map) files.get(i)).get("file");
-				filepath = filename.substring(0,
-						filename.lastIndexOf(File.separator));
-				for (int j = 0; j < coverFilenames.length; j++) {
-					System.err.println("Checking "
-							+ new File(filepath, coverFilenames[j])
-									.getAbsolutePath());
-					if (new File(filepath, coverFilenames[j]).exists()) {
-						return new File(filepath, coverFilenames[j]);
-
-					}
-				}
-			}
-			Album albumObj = Album.getInfo(
-					StringUtils.unAlphabetizeLinguistically(StringUtils.unAlphabetizeLinguistically(artist)),
-					StringUtils.unAlphabetizeLinguistically(StringUtils.unAlphabetizeLinguistically(album)),
-					metricManager.getLastFmApiKey());
-			if (albumObj != null && filepath != null) {
-				InputStream is = new URL(albumObj.getImageURL(ImageSize.LARGE))
-						.openStream();
-				try {
-					System.err.println("Attempting to write last.fm image to "
-							+ filepath + "/album.jpg");
-					File npic = new File(filepath + "/album.jpg");
-					npic.createNewFile();
-					FileOutputStream fos = new FileOutputStream(npic);
-					int in = -1;
-					while ((in = is.read()) != -1) {
-						fos.write(in);
-					}
-					fos.close();
-					return npic;
-				} finally {
-					if (is != null) {
-						is.close();
-					}
+				String filepath = AlbumArtScanner.getFilePath(filename);
+				File albumJpeg = new File(filepath, "album.jpg");
+				if (albumJpeg.exists()) {
+					return albumJpeg;
 				}
 			}
 			return new File("./image/nocover.png");
@@ -102,13 +64,15 @@ public class ImageDispatch extends AbstractDispatch {
 
 			return DatabaseManager
 					.getInstance()
-					.query(" select s.artist, s.album "
+					.query(" select s.artist_sort, s.album_sort "
 							+ "  from song s"
 							+ "       left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
 							+ "       and (s.artist_sort = ss.artist or ss.artist = '*')"
-							+ "       and (s.title_sort = ss.name or ss.name = '*'))"
+							+ "       and (s.title_sort = ss.name or ss.name = '*')"
+							+ getJoinFilter(filter)
+							+ ")"
 							+ getFilter(filter)
-							+ " group by s.artist_sort, s.artist, s.album_sort, s.album "
+							+ " group by s.artist_sort, s.album_sort "
 							+ " order by s.artist_sort, s.album_sort",
 							new Object[0], new String[] { "artist", "album" });
 		}
@@ -120,8 +84,16 @@ public class ImageDispatch extends AbstractDispatch {
 		if (!filter) {
 			return "";
 		}
-		return "  where coalesce(ss.stick, 0) >= 0 ";
+		return "  where ss.stick is null or ss.stick >= 0 ";
 	}
+	
+	private String getJoinFilter(boolean filter) {
+		if (!filter) {
+			return "";
+		}
+		return "  and ss.stick < 0 ";
+	}
+	
 
 	public void write(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
