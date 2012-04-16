@@ -29,12 +29,15 @@ public class HttpServer {
 
 		});
 		
+		
 		// initiate database
 		DatabaseManager.getInstance();
 		
-		// start our player thread
+		
+		// initiate player
 		PlayerManager.getInstance();
-
+		
+		
 		Context root = new Context(server, "/", Context.SESSIONS);
 		root.addServlet(new ServletHolder(new ControllerServlet()), "/*");
 		server.start();

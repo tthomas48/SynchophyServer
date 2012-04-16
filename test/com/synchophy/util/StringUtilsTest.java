@@ -40,4 +40,8 @@ public class StringUtilsTest extends TestCase {
     assertEquals("0000000010", StringUtils.cleanTrack("10/14"));
     assertEquals("0000000001", StringUtils.cleanTrack("01/14"));
   }
+  
+  public void testCleanFilename() {
+	  assertEquals("abcDEF-349 39343kfd", StringUtils.cleanFilename("abcDEF-349 3934(*)3kfd"));
+  }
 }

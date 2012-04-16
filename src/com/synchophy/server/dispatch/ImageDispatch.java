@@ -14,6 +14,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.synchophy.server.ConfigManager;
 import com.synchophy.server.MetricManager;
 import com.synchophy.server.db.DatabaseManager;
 import com.synchophy.server.scanner.AlbumArtScanner;
@@ -27,7 +28,7 @@ import de.umass.lastfm.cache.FileSystemCache;
 public class ImageDispatch extends AbstractDispatch {
 
 	static {
-		String musicPath = System.getProperty("music.path", "./Music");
+		String musicPath = ConfigManager.getInstance().getMusicPath();
 		File cachedir = new File(musicPath, ".lastfm-cache");
 		if (!cachedir.exists()) {
 			cachedir.mkdirs();
@@ -41,14 +42,18 @@ public class ImageDispatch extends AbstractDispatch {
 		String action = getRequiredParameter(request, "a");
 		if ("view".equals(action)) {
 			String album = getRequiredParameter(request, "album");
-			String artist = getRequiredParameter(request, "artist");
+			String artist = getOptionalParameter(request, "artist");
 
-			List files = DatabaseManager
-					.getInstance()
-					.query("select file from song where artist_sort = ? and album_sort = ?",
-							new Object[] { artist, album },
-							new String[] { "file" });
-			System.err.println("Found " + files.size() + " files.");
+			String andClause = "";
+			String[] params = new String[] { album };
+			if ("".equals(artist) == false) {
+				andClause += " and artist_sort = ? ";
+				params = new String[] { album, artist };
+			}
+
+			List files = DatabaseManager.getInstance().query(
+					"select file from song where album_sort = ?" + andClause,
+					params, new String[] { "file" });
 			for (int i = 0; i < files.size(); i++) {
 				String filename = (String) ((Map) files.get(i)).get("file");
 				String filepath = AlbumArtScanner.getFilePath(filename);
@@ -69,9 +74,7 @@ public class ImageDispatch extends AbstractDispatch {
 							+ "       left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
 							+ "       and (s.artist_sort = ss.artist or ss.artist = '*')"
 							+ "       and (s.title_sort = ss.name or ss.name = '*')"
-							+ getJoinFilter(filter)
-							+ ")"
-							+ getFilter(filter)
+							+ getJoinFilter(filter) + ")" + getFilter(filter)
 							+ " group by s.artist_sort, s.album_sort "
 							+ " order by s.artist_sort, s.album_sort",
 							new Object[0], new String[] { "artist", "album" });
@@ -86,14 +89,13 @@ public class ImageDispatch extends AbstractDispatch {
 		}
 		return "  where ss.stick is null or ss.stick >= 0 ";
 	}
-	
+
 	private String getJoinFilter(boolean filter) {
 		if (!filter) {
 			return "";
 		}
 		return "  and ss.stick < 0 ";
 	}
-	
 
 	public void write(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
@@ -115,8 +117,6 @@ public class ImageDispatch extends AbstractDispatch {
 			response.setStatus(404);
 			return;
 		}
-
-		System.err.println("Writing out " + filepath);
 
 		response.setHeader("Content-Type", "image/jpeg");
 		int size = (int) filepath.length();

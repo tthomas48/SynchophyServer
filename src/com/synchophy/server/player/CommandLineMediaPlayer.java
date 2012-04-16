@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 
+import com.synchophy.server.ConfigManager;
 import com.synchophy.server.PlayerManager;
 
 public class CommandLineMediaPlayer implements IMediaPlayer {
@@ -19,8 +20,7 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 	public CommandLineMediaPlayer() {
 		System.err.println("Attempting to start mpg123 remote.");
 
-		final String playerBinary = System.getProperty("media.player.path",
-				"/opt/bin/mpg123");
+		final String playerBinary = ConfigManager.getInstance().getMediaPlayerPath();
 
 		Thread remoteThread = new Thread() {
 			public void run() {

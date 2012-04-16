@@ -11,6 +11,10 @@ public interface ITagProvider {
 	public String getTitle();
 
 	public String getTrack();
+	
+	public String getOrchestra();
+	
+	public boolean writeArt(String path);
 
 	public void setAlbum(String album);
 

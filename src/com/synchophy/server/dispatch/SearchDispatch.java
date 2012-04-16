@@ -20,14 +20,14 @@ public class SearchDispatch extends AbstractDispatch {
 		// tag
 		// playlist
 
-		String query = getRequiredParameter(request, "q");
+		String query = getRequiredParameter(request, "q").toUpperCase();
 
 		Map results = new HashMap();
 		results.put(
 				"artist",
 				DatabaseManager.getInstance().query(
 						"select distinct(artist_sort) " + "from song "
-								+ "where artist_sort like ? "
+								+ "where upper(artist) like ? "
 								+ "order by upper(artist_sort)",
 						new String[] { "%" + query + "%" },
 						new String[] { "name" }));
@@ -35,7 +35,7 @@ public class SearchDispatch extends AbstractDispatch {
 				"album",
 				DatabaseManager.getInstance().query(
 						"select album_sort, artist_sort " + "from song "
-								+ "where album_sort like ? "
+								+ "where upper(album) like ? "
 								+ " group by album_sort, artist_sort "
 								+ " order by upper(album_sort)",
 						new String[] { "%" + query + "%" },
@@ -47,7 +47,7 @@ public class SearchDispatch extends AbstractDispatch {
 						.getInstance()
 						.query("select trim(LEADING '0' FROM title_sort), album_sort, artist_sort "
 								+ "from song "
-								+ "where title_sort like ? "
+								+ "where upper(title) like ? "
 								+ " group by title_sort, album_sort, artist_sort "
 								+ " order by upper(title_sort)",
 								new String[] { "%" + query + "%" },
@@ -57,7 +57,7 @@ public class SearchDispatch extends AbstractDispatch {
 				"tag",
 				DatabaseManager.getInstance().query(
 						"select tag_name " + "from tag "
-								+ "where tag_name like ? ",
+								+ "where upper(tag_name) like ? ",
 						new String[] { "%" + query + "%" },
 						new String[] { "name" }));
 
@@ -65,7 +65,7 @@ public class SearchDispatch extends AbstractDispatch {
 				"station",
 				DatabaseManager.getInstance()
 						.query("select name " + "from station "
-								+ "where name like ? ",
+								+ "where upper(name) like ? ",
 								new String[] { "%" + query + "%" },
 								new String[] { "name" }));
 		return results;

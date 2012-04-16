@@ -1,5 +1,7 @@
 package com.synchophy.server;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -19,6 +21,7 @@ public class PlayerManager {
 	protected boolean paused;
 	private boolean random;
 	private boolean continuous;
+	private boolean party;
 	private Thread playThread;
 	private int position;
 	private IMediaPlayer player;
@@ -34,8 +37,7 @@ public class PlayerManager {
 	private void init() {
 
 		try {
-			String playerClass = System.getProperty("media.player",
-					CommandLineMediaPlayer.class.getName());
+			String playerClass = ConfigManager.getInstance().getPlayerProvider();
 			Class clazz = Class.forName(playerClass);
 			Object obj = clazz.newInstance();
 			if (obj instanceof IMediaPlayer == false) {
@@ -53,7 +55,7 @@ public class PlayerManager {
 
 		// by default we play forever
 		continuous = true;
-		
+
 		setPosition(0);
 		running = true;
 		done = true;
@@ -90,7 +92,7 @@ public class PlayerManager {
 
 	private String getNextFilename() {
 		List queue = DatabaseManager.getInstance().loadQueueFiles();
-		if (random) {
+		if (!party && random) {
 			int next = generator.nextInt(queue.size());
 			currentFilename = (String) ((Map) queue.get(next)).get("file");
 			return currentFilename;
@@ -102,10 +104,79 @@ public class PlayerManager {
 
 		if (queue.size() > position) {
 			currentFilename = (String) ((Map) queue.get(position)).get("file");
+			System.err.println("PARTY? " + party);
+			if (party) {
+				getNextFive(queue);
+			}
 			return currentFilename;
 		}
 		return null;
 	}
+
+	private Object nextFiveLock = new Object();
+
+	private void getNextFive(List queue) {
+		System.err.println("Attempting next five");
+		synchronized (nextFiveLock) {
+			if (position + 4 >= queue.size()) {
+				System.err.println("Need at least 5 more.");
+				final User user = this.getCurrentSongUser();
+				final Map song = this.getCurrentScrobbleInfo();
+				Thread thread = new Thread("NextFiveThread") {
+					public void run() {
+						synchronized (nextFiveLock) {
+							System.err.println("In next five thread.");
+							metricManager.getNextFiveAndInsert(user, song, 5);
+						}
+					}
+				};
+				thread.start();
+			}
+
+		}
+	}
+
+	public synchronized void addSong(User user, Map song, boolean fillParty) {
+		List queue = DatabaseManager.getInstance().loadQueue();
+		int position = DatabaseManager.getInstance().loadQueueMax() + 1;
+
+		DatabaseManager.getInstance().executeQuery(
+				"insert into queue (index, file, user_id) values (?, ?, ?)",
+				new Object[] { new Integer(position), song.get("file"),
+						new Long(user.getId()) });
+		if (party && fillParty) {
+			getNextFive(queue);
+		}
+
+	}
+
+	public boolean isArtistInQueue(String artist) {
+
+		List rows = DatabaseManager
+				.getInstance()
+				.query("select 'X' from queue q, song s where s.file = q.file and s.artist = ?",
+						new Object[] { artist }, new String[] { "x" });
+		if (rows.size() > 0) {
+			return true;
+		}
+		return false;
+	}
+        private static final int ARTISTS_BEFORE_REPEAT = 200;	
+	public List getArtistsInQueue() {
+
+		List rows = DatabaseManager
+				.getInstance()
+				.query("select s.artist from queue q, song s where s.file = q.file limit " + ARTISTS_BEFORE_REPEAT,
+						new Object[0], new String[] { "artist" });
+		List artists = new ArrayList();
+		Iterator i = rows.iterator();
+		while(i.hasNext()) {
+			Map song = (Map) i.next();
+			artists.add(song.get("artist"));
+		}
+		return artists;
+	}
+	
 
 	public void next() {
 		metricManager.next(currentFilename);
@@ -350,4 +421,13 @@ public class PlayerManager {
 	public void toggleContinuous() {
 		this.continuous = !continuous;
 	}
+
+	public Boolean isParty() {
+		return Boolean.valueOf(party);
+	}
+
+	public void toggleParty() {
+		this.party = !party;
+	}
+
 }

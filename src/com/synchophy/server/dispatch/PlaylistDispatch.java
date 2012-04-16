@@ -55,25 +55,13 @@ public class PlaylistDispatch extends AbstractDispatch {
 				params.add(title);
 			}
 
-			int index = startPosition + 1;
-
 			List toAdd = DatabaseManager.getInstance().query(sql + order,
 					params.toArray(new String[params.size()]),
 					new String[] { "file" });
 			for (int i = 0; i < toAdd.size(); i++) {
-				System.err.println("Inserting into queue ["
-						+ new Integer(index + i) + "]"
+				System.err.println("Inserting into queue "
 						+ (String) ((Map) toAdd.get(i)).get("file") + ":" + user.getId());
-				DatabaseManager
-						.getInstance()
-						.executeQuery(
-								"insert into queue (index, file, user_id) values (?, ?, ?)",
-								new Object[] {
-										new Integer(index + i),
-										(String) ((Map) toAdd.get(i))
-												.get("file"),
-										new Long(user.getId()) });
-
+				PlayerManager.getInstance().addSong(user, (Map) toAdd.get(i), true);
 			}
 			if (play) {
 				PlayerManager.getInstance().select(startPosition);

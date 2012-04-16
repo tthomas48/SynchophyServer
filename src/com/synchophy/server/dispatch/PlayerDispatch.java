@@ -39,6 +39,8 @@ public class PlayerDispatch extends AbstractDispatch {
 			PlayerManager.getInstance().toggleRandom();
 		} else if (action.equals("continuous")) {
 			PlayerManager.getInstance().toggleContinuous();
+		} else if (action.equals("party")) {
+			PlayerManager.getInstance().toggleParty();
 		}
 
 		return getStatus();
@@ -51,6 +53,7 @@ public class PlayerDispatch extends AbstractDispatch {
 		status.put("position", PlayerManager.getInstance().getPosition());
 		status.put("random", PlayerManager.getInstance().isRandom());
 		status.put("continuous", PlayerManager.getInstance().isContinuous());
+		status.put("party", PlayerManager.getInstance().isParty());
 		return status;
 	}
 }

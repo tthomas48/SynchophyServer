@@ -4,6 +4,7 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
+import com.synchophy.server.ConfigManager;
 import com.synchophy.server.scanner.tag.ITagProvider;
 import com.synchophy.server.scanner.tag.Mp3OnlyTagProvider;
 
@@ -11,14 +12,15 @@ public class TaggedFile {
 	private static Constructor tagConstructor;
 	public static String[] supportedExts = new String[0];
 	static {
-		String tagProviderClassname = System.getProperty("tag.provider",
-				Mp3OnlyTagProvider.class.getName());
+		String tagProviderClassname = ConfigManager.getInstance()
+				.getTagProvider();
 
 		try {
 			Class tagProviderClass = Class.forName(tagProviderClassname);
 			tagConstructor = tagProviderClass
 					.getConstructor(new Class[] { File.class });
-			Method formats = tagProviderClass.getMethod("formats", new Class[0]);
+			Method formats = tagProviderClass
+					.getMethod("formats", new Class[0]);
 			supportedExts = (String[]) formats.invoke(null, new Object[0]);
 
 		} catch (Exception e) {
@@ -67,6 +69,10 @@ public class TaggedFile {
 		return tag.getTrack();
 	}
 
+	public String getOrchestra() {
+		return tag.getOrchestra();
+	}
+
 	public void setAlbum(String album) {
 		tag.setAlbum(album);
 	}
@@ -82,8 +88,21 @@ public class TaggedFile {
 	public void setTrack(String track) {
 		tag.setTrack(track);
 	}
-	
+
 	public static String[] formats() {
 		return supportedExts;
+	}
+	
+	public boolean writeArt(String path) {
+		return tag.writeArt(path);
+	}
+
+	public static void main(String[] args) {
+		TaggedFile file = new TaggedFile(
+
+				"/home/tthomas/Music/Lil Wayne Bruno Mars/Tha Carter IV/17 - Mirror Feat Bruno Mars.mp3");
+		System.err.println(file.getOrchestra());
+		System.err.println(file.getArtist());
+
 	}
 }
