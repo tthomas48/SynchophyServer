@@ -48,7 +48,7 @@ public class AlbumArtScanner {
 						+ whereClause
 						+ " group by s.artist_sort, s.artist, s.album_sort, s.album "
 						+ " order by s.artist_sort, s.album_sort",
-						new Object[0], new String[] { "artist", "album" });
+						params, new String[] { "artist", "album" });
 
 		for (Iterator i = albums.iterator(); i.hasNext();) {
 			Map row = (Map) i.next();
@@ -69,12 +69,13 @@ public class AlbumArtScanner {
 		System.err.println("Found " + files.size() + " files.");
 
 		String filepath = null;
+		File filenotfound = null;
 		for (int i = 0; i < (files.size() > 0 ? 1 : 0); i++) {
 			String filename = (String) ((Map) files.get(i)).get("file");
 
 			filepath = AlbumArtScanner.getFilePath(filename);
 
-			File filenotfound = new File(filepath, ".file-notfound");
+			filenotfound = new File(filepath, ".file-notfound");
 			if (filenotfound.exists()) {
 				break;
 			}
@@ -99,11 +100,14 @@ public class AlbumArtScanner {
 			try {
 				if (tfile.isParsed()) {
 					if (tfile.writeArt(filepath + "/album.jpg")) {
+						filenotfound.delete();
 						return;
 					}
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+			} finally {
+				tfile = null;
 			}
 
 		}
@@ -133,6 +137,9 @@ public class AlbumArtScanner {
 				InputStream is = new URL(albumObj.getImageURL(ImageSize.LARGE))
 						.openStream();
 				writeAlbumJpeg(filepath, is);
+				if(filenotfound != null) {
+					filenotfound.delete();
+				}
 			} catch (MalformedURLException e) {
 				System.err.println("Invalid url: "
 						+ albumObj.getImageURL(ImageSize.LARGE));
@@ -141,6 +148,7 @@ public class AlbumArtScanner {
 		} else {
 			lastfmnotfound.createNewFile();
 		}
+		albumObj = null;
 	}
 
 	public static String getFilePath(String filename) {
