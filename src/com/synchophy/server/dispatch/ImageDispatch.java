@@ -4,10 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -15,14 +12,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.synchophy.server.ConfigManager;
-import com.synchophy.server.MetricManager;
 import com.synchophy.server.db.DatabaseManager;
 import com.synchophy.server.scanner.AlbumArtScanner;
-import com.synchophy.util.StringUtils;
 
-import de.umass.lastfm.Album;
 import de.umass.lastfm.Caller;
-import de.umass.lastfm.ImageSize;
 import de.umass.lastfm.cache.FileSystemCache;
 
 public class ImageDispatch extends AbstractDispatch {

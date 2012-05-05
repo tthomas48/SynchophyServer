@@ -6,10 +6,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.synchophy.server.ConfigManager;
+import com.synchophy.server.ControllerServlet;
 import com.synchophy.server.db.DatabaseManager;
 import com.synchophy.server.scanner.FileScanner;
-
-import edu.emory.mathcs.backport.java.util.concurrent.ThreadPoolExecutor;
 
 public class ProcessUploadsDispatch extends AbstractDispatch {
 	
@@ -31,7 +30,7 @@ public class ProcessUploadsDispatch extends AbstractDispatch {
 						.getInstance().getUploadPath(),
 						true);
 				scanner.scan();
-				ExpandDispatch.clearCache();
+				ControllerServlet.touchLastModified();
 				running = false;
 			};
 

@@ -22,7 +22,7 @@ public class CommandLineMediaPlayer implements IMediaPlayer {
 
 		final String playerBinary = ConfigManager.getInstance().getMediaPlayerPath();
 
-		Thread remoteThread = new Thread() {
+		Thread remoteThread = new Thread("CommandLineMediaPlayer") {
 			public void run() {
 				try {
 					Process process = Runtime.getRuntime().exec(

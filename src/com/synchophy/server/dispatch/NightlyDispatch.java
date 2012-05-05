@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.synchophy.server.ConfigManager;
+import com.synchophy.server.ControllerServlet;
 import com.synchophy.server.db.DatabaseManager;
 import com.synchophy.server.scanner.FileScanner;
 
@@ -31,7 +32,7 @@ public class NightlyDispatch extends AbstractDispatch {
 						.getInstance().getMusicPath(), ConfigManager
 						.getInstance().getUploadPath(), true);
 				scanner.scan();
-				ExpandDispatch.clearCache();
+				ControllerServlet.touchLastModified();
 				running = false;
 			};
 

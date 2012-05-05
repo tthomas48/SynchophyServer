@@ -11,12 +11,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.farng.mp3.AbstractMP3Tag;
-import org.farng.mp3.MP3File;
-import org.farng.mp3.TagException;
-import org.farng.mp3.id3.AbstractID3v2;
-import org.farng.mp3.id3.ID3v1;
-
 import com.synchophy.server.db.DatabaseManager;
 import com.synchophy.server.scanner.TaggedFile;
 import com.synchophy.util.StringUtils;

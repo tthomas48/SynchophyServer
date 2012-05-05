@@ -48,6 +48,10 @@ public class DatabaseManager {
 					executeQuery("ALTER TABLE song ADD COLUMN orchestra_sort VARCHAR(2000)");
 					executeQuery("ALTER TABLE song ADD COLUMN orchestra_key char(1)");
 				}
+				if (!columnExists(dbmd, "song", "insert_timestamp")) {
+					System.err.println("HERE3");
+					executeQuery("ALTER TABLE song ADD COLUMN insert_timestamp TIMESTAMP default 'now'");
+				}
 			}
 
 			if (!tableExists(dbmd, "import")) {

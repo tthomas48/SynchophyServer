@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 
 import com.synchophy.server.ConfigManager;
 import com.synchophy.server.scanner.tag.ITagProvider;
-import com.synchophy.server.scanner.tag.Mp3OnlyTagProvider;
 
 public class TaggedFile {
 	private static Constructor tagConstructor;

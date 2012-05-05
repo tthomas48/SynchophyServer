@@ -10,7 +10,6 @@ import org.farng.mp3.MP3File;
 import org.farng.mp3.id3.AbstractID3v2;
 import org.farng.mp3.id3.ID3v1;
 import org.farng.mp3.id3.ID3v1_1;
-import org.jaudiotagger.tag.datatype.DataTypes;
 
 public class Mp3OnlyTagProvider implements ITagProvider {
 	private MP3File f;

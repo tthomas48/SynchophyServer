@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.synchophy.server.ConfigManager;
 import com.synchophy.server.MetricManager;
 import com.synchophy.server.db.DatabaseManager;
 import com.synchophy.util.StringUtils;
@@ -95,7 +94,6 @@ public class AlbumArtScanner {
 			filenotfound.createNewFile();
 
 			// second try inside the file
-			File file = new File(filepath);
 			TaggedFile tfile = new TaggedFile(filename);
 			try {
 				if (tfile.isParsed()) {

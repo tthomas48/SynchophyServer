@@ -1,10 +1,7 @@
 package com.synchophy.server.scanner.tag;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-
-import javax.imageio.ImageIO;
 
 import org.jaudiotagger.audio.mp3.MP3File;
 import org.jaudiotagger.tag.FieldKey;

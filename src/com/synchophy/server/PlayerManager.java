@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Random;
 
 import com.synchophy.server.db.DatabaseManager;
-import com.synchophy.server.player.CommandLineMediaPlayer;
 import com.synchophy.server.player.IMediaPlayer;
 
 public class PlayerManager {

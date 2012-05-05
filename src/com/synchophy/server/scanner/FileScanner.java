@@ -1,7 +1,6 @@
 package com.synchophy.server.scanner;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Date;
@@ -14,7 +13,6 @@ import java.util.logging.Logger;
 
 import com.synchophy.server.ConfigManager;
 import com.synchophy.server.db.DatabaseManager;
-import com.synchophy.server.player.IMediaPlayer;
 import com.synchophy.server.scanner.handler.IFileHandler;
 import com.synchophy.util.StringUtils;
 

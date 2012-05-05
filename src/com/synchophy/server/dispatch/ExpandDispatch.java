@@ -1,9 +1,7 @@
 package com.synchophy.server.dispatch;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -11,8 +9,25 @@ import javax.servlet.http.HttpServletResponse;
 import com.synchophy.server.db.DatabaseManager;
 
 public class ExpandDispatch extends AbstractDispatch {
-	
-	private static Map cache = new HashMap();
+
+	public static final int ITEMS_PER_PAGE = 1000;
+
+	private Object getBody(String type, String value, String artist,
+			String view, boolean filter, int page) {
+
+		if (type.equals("letter")) {
+			if (view.equals("artists")) {
+				return expandArtistsLetter(filter, page);
+			}
+			return expandAlbumsLetter(filter, page);
+		} else if (type.equals("artist")) {
+			return expandArtists(filter, value, page);
+		} else if (type.equals("album")) {
+			return expandAlbums(filter, value, artist, page);
+		}
+		return null;
+
+	}
 
 	public Object execute(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
@@ -21,41 +36,11 @@ public class ExpandDispatch extends AbstractDispatch {
 		String value = getOptionalParameter(request, "v");
 		String artist = getOptionalParameter(request, "artist");
 		String view = getOptionalParameter(request, "view");
+		int page = Integer.parseInt(getOptionalParameter(request, "p", "0"));
 		boolean filter = Boolean.valueOf(
 				getRequiredParameter(request, "filter")).booleanValue();
-		
-		String cacheKey = getKey(type, value, artist, view, filter);
-		if(cache.containsKey(cacheKey)) {
-			return cache.get(cacheKey);
-		}
+		return getBody(type, value, artist, view, filter, page);
 
-		if (type.equals("letter")) {
-			if (view.equals("artists")) {
-				Object output = expandArtistsLetter(filter);
-				cache.put(cacheKey, output);
-				return output;
-			}
-			Object output = expandAlbumsLetter(filter);
-			cache.put(cacheKey, output);
-			return output;
-		} else if (type.equals("artist")) {
-			Object output = expandArtists(filter, value);
-			cache.put(cacheKey, output);
-			return output;
-		} else if (type.equals("album")) {
-			Object output = expandAlbums(filter, value, artist);
-			cache.put(cacheKey, output);
-			return output;
-		}
-		return null;
-	}
-	
-	public static void clearCache() {
-		cache.clear();
-	}
-	
-	private String getKey(String type, String value, String artist, String view, boolean filter) {
-		return type + "~" + value + "~" + artist + "~" + view + "~" + Boolean.toString(filter);
 	}
 
 	private String getFilter(boolean filter) {
@@ -69,7 +54,8 @@ public class ExpandDispatch extends AbstractDispatch {
 		return "  " + conjunction + " coalesce(ss.stick, 0) >= 0 ";
 	}
 
-	private Object expandAlbums(boolean filter, String value, String artist) {
+	private Object expandAlbums(boolean filter, String value, String artist,
+			int page) {
 
 		String[] params = new String[] { value, artist };
 		String artistFilter = "  and s.artist_sort = ? ";
@@ -87,14 +73,18 @@ public class ExpandDispatch extends AbstractDispatch {
 				+ artistFilter
 
 				+ " group by s.title_sort, s.artist_sort, s.album_sort, coalesce(ss.stick, 0)  "
-				+ " order by upper(s.title_sort)";
+				+ " order by upper(s.title_sort)"
+				+ " limit "
+				+ ITEMS_PER_PAGE
+				+ " offset " + (ITEMS_PER_PAGE * page);
+
 		// returns tracks
 		List tracks = DatabaseManager.getInstance().query(query, params,
 				new String[] { "name", "artist", "album", "sticky" });
 		return tracks;
 	}
 
-	private Object expandArtists(boolean filter, String value) {
+	private Object expandArtists(boolean filter, String value, int page) {
 
 		// returns albums
 		return DatabaseManager
@@ -106,12 +96,14 @@ public class ExpandDispatch extends AbstractDispatch {
 						+ "where s.artist_sort = ? "
 						+ getFilter(filter)
 						+ "group by s.album_sort, s.artist_sort, coalesce(ss.stick, 0) "
-						+ "order by upper(s.album_sort)",
+						+ "order by upper(s.album_sort)"
+						+ " limit "
+						+ ITEMS_PER_PAGE + " offset " + (ITEMS_PER_PAGE * page),
 						new String[] { value },
 						new String[] { "name", "artist", "sticky" });
 	}
 
-	private Object expandArtistsLetter(boolean filter) {
+	private Object expandArtistsLetter(boolean filter, int page) {
 
 		return DatabaseManager
 				.getInstance()
@@ -130,25 +122,31 @@ public class ExpandDispatch extends AbstractDispatch {
 						// " and (s1.title_sort = ss1.name or ss1.name = '*'))"
 						// + " where s.artist_sort = s1.artist_sort) "
 						+ "group by s.artist_sort, coalesce(ss.stick, 0) "
-						+ "order by upper(s.artist_sort)", new String[0],
-						new String[] { "name", "sticky" });
+						+ "order by upper(s.artist_sort)" + " limit "
+						+ ITEMS_PER_PAGE + " offset " + (ITEMS_PER_PAGE * page)
+
+				, new String[0], new String[] { "name", "sticky" });
 	}
 
-	private Object expandAlbumsLetter(boolean filter) {
+	private Object expandAlbumsLetter(boolean filter, int page) {
 
 		List albums = DatabaseManager
 				.getInstance()
-				.query("select album_sort, " +
-						"(select sss.artist_sort from song sss where sss.album_sort = s.album_sort limit 1), " +
-						"coalesce(ss.stick, 0) "
+				.query("select album_sort, "
+						+ "'',"
+						/*+ "(select sss.artist_sort from song sss where sss.album_sort = s.album_sort limit 1), " */
+						+ "coalesce(ss.stick, 0) "
 						+ "from song s left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
 						+ "  and (s.artist_sort = ss.artist or ss.artist = '*') "
 						+ "  and (s.title_sort = ss.name or ss.name = '*')) "
 						+ getFilter(filter, "where")
 						+ "group by album_sort, coalesce(ss.stick, 0) "
-						+ "order by upper(album_sort)", new String[0],
-						new String[] { "name", "artist", "sticky" });
-		
+						+ "order by upper(album_sort)" + " limit "
+						+ ITEMS_PER_PAGE + " offset " + (ITEMS_PER_PAGE * page)
+
+				, new String[0], new String[] { "name", "artist", "sticky" });
+
 		return albums;
 	}
+
 }

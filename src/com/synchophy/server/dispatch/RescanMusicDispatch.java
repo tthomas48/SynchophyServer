@@ -6,7 +6,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.synchophy.server.ConfigManager;
-import com.synchophy.server.scanner.AlbumArtScanner;
+import com.synchophy.server.ControllerServlet;
 import com.synchophy.server.scanner.FileScanner;
 
 public class RescanMusicDispatch extends AbstractDispatch {
@@ -17,7 +17,7 @@ public class RescanMusicDispatch extends AbstractDispatch {
 		String musicPath = ConfigManager.getInstance().getMusicPath();
 		FileScanner fileScanner = new FileScanner(musicPath);
 		fileScanner.scan();
-		ExpandDispatch.clearCache();
+		ControllerServlet.touchLastModified();
 
 		return Boolean.TRUE;
 	}

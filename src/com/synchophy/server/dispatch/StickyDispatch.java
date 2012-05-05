@@ -33,6 +33,8 @@ public class StickyDispatch extends AbstractDispatch {
                   new Object[]{
                       name, sticky, new Long(user.getId()), artist, album
                   });
+    
+    ControllerServlet.touchLastModified();
     return Boolean.TRUE;
   }
 
