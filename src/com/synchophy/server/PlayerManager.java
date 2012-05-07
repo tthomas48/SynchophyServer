@@ -289,6 +289,8 @@ public class PlayerManager {
 	}
 
 	public void shutdown() {
+		
+		stop();
 
 		playable = false;
 		running = false;
@@ -306,6 +308,7 @@ public class PlayerManager {
 			}
 		}
 		waitToFinish();
+		instance = null;
 	}
 
 	private void waitToFinish() {

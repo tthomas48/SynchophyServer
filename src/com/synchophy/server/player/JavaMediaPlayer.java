@@ -84,7 +84,9 @@ public class JavaMediaPlayer implements IMediaPlayer {
 					// only advance if we actually finish the song
 					System.err
 							.println("Advancing because we finished the song.");
-					PlayerManager.getInstance().setPosition(position++);
+					PlayerManager.getInstance().setPosition(
+							PlayerManager.getInstance().getPosition()
+									.intValue() + 1);
 					return true;
 				}
 			} catch (Exception e) {
@@ -97,7 +99,9 @@ public class JavaMediaPlayer implements IMediaPlayer {
 		} catch (BitstreamException e) {
 			e.printStackTrace();
 		}
-		System.err.println("Advancing because we feel out of the loop.");
+		System.err.println("Advancing because we fell out of the loop.");
+		PlayerManager.getInstance().setPosition(
+				PlayerManager.getInstance().getPosition().intValue() + 1);
 		return true;
 	}
 
@@ -152,9 +156,7 @@ public class JavaMediaPlayer implements IMediaPlayer {
 
 			synchronized (this) {
 				out = audio;
-				System.err.println("Attempting write");
 				if (out != null) {
-					System.err.println("Writing");
 					out.write(output.getBuffer(), 0, output.getBufferLength());
 				}
 			}
@@ -183,13 +185,13 @@ public class JavaMediaPlayer implements IMediaPlayer {
 			}
 		}
 	}
-	
+
 	public void shutdown() {
 	}
-	
+
 	public void notifyPause() {
 	}
-	
+
 	public void notifyUnpause() {
 	}
 }

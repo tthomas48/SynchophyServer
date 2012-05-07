@@ -1,5 +1,8 @@
 package com.synchophy.server;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -10,7 +13,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.synchophy.server.db.DatabaseManager;
+import com.synchophy.util.FinallyUtils;
 
+import de.umass.lastfm.Album;
+import de.umass.lastfm.Artist;
 import de.umass.lastfm.Authenticator;
 import de.umass.lastfm.Session;
 import de.umass.lastfm.Track;
@@ -70,6 +76,171 @@ public class MetricManager {
 			e.printStackTrace();
 		}
 	}
+
+	public Map<String, Map<String, Object>> getTopAlbums(User user) {
+
+		String lastfmUsername = DatabaseManager.getInstance().getSetting(user,
+				"lastfmUsername");
+
+		Collection<Album> albums = de.umass.lastfm.User.getTopAlbums(
+				lastfmUsername, LASTFM_API_KEY);
+
+		Map<String, Map<String, Object>> results = new HashMap<String, Map<String, Object>>();
+
+		String sql = "select s.file, s.size "
+				+ " from song s left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
+				+ "  and (s.artist_sort = ss.artist or ss.artist = '*') "
+				+ "  and (s.title_sort = ss.name or ss.name = '*')"
+				+ "  and ss.user_id = ?) "
+				+ " where lower(s.album) = lower(?)"
+				+ "  and lower(s.artist) = lower(?) "
+				+ "  and coalesce(ss.stick, 0) >= 0"
+				+ " order by coalesce(ss.stick, 0) desc, insert_timestamp desc ";
+		PreparedStatement sth = null;
+		try {
+			sth = DatabaseManager.getInstance().prepare(sql);
+			for (Album album : albums) {
+				try {
+					sth.setLong(1, user.getId());
+					sth.setString(2, album.getArtist());
+					sth.setString(3, album.getName());
+					ResultSet rs = sth.executeQuery();
+					while (rs.next()) {
+						String file = rs.getString(1);
+						Integer size = rs.getInt(2);
+						Map<String, Object> song = new HashMap<String, Object>();
+						song.put("file", file);
+						song.put("size", size);
+						results.put(file, song);
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		} finally {
+			FinallyUtils.close(sth);
+		}
+
+		return results;
+
+	}
+
+	public Map<String, Map<String, Object>> getTopArtists(User user) {
+
+		String lastfmUsername = DatabaseManager.getInstance().getSetting(user,
+				"lastfmUsername");
+
+		Collection<Artist> artists = de.umass.lastfm.User.getTopArtists(
+				lastfmUsername, LASTFM_API_KEY);
+
+		Map<String, Map<String, Object>> results = new HashMap<String, Map<String, Object>>();
+
+		String albumSql = "select distinct(album) from song where lower(artist) = lower(?)";
+
+		String sql = "select s.file, s.size "
+				+ " from song s left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
+				+ "  and (s.artist_sort = ss.artist or ss.artist = '*') "
+				+ "  and (s.title_sort = ss.name or ss.name = '*')"
+				+ "  and ss.user_id = ?) "
+				+ " where lower(s.album) = lower(?)"
+				+ "  and lower(s.artist) = lower(?) "
+				+ "  and coalesce(ss.stick, 0) >= 0"
+				+ " order by coalesce(ss.stick, 0) desc, insert_timestamp desc ";
+		PreparedStatement sth = null;
+		PreparedStatement albumSth = null;
+		try {
+			sth = DatabaseManager.getInstance().prepare(sql);
+			albumSth = DatabaseManager.getInstance().prepare(albumSql);
+			for (Artist artist : artists) {
+				try {
+					List<String> albums = new ArrayList<String>();
+					albumSth.setString(1, artist.getName());
+					ResultSet rs = albumSth.executeQuery();
+					while (rs.next()) {
+						albums.add(rs.getString(1));
+					}
+
+					for (String album : albums) {
+						sth.setLong(1, user.getId());
+						sth.setString(2, artist.getName());
+						sth.setString(3, album);
+						rs = sth.executeQuery();
+						while (rs.next()) {
+							String file = rs.getString(1);
+							Integer size = rs.getInt(2);
+							Map<String, Object> song = new HashMap<String, Object>();
+							song.put("file", file);
+							song.put("size", size);
+							results.put(file, song);
+						}
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		} finally {
+			FinallyUtils.close(sth);
+			FinallyUtils.close(albumSth);
+		}
+
+		return results;
+	}
+
+	public Map<String, Map<String, Object>> getTopTracks(User user) {
+
+		String lastfmUsername = DatabaseManager.getInstance().getSetting(user,
+				"lastfmUsername");
+
+		Collection<Track> tracks = de.umass.lastfm.User.getTopTracks(
+				lastfmUsername, LASTFM_API_KEY);
+
+		Map<String, Map<String, Object>> results = new HashMap<String, Map<String, Object>>();
+
+		String sql = "select s.file, s.size "
+				+ " from song s left outer join sticky ss on ((s.album_sort = ss.album or ss.album = '*') "
+				+ "  and (s.artist_sort = ss.artist or ss.artist = '*') "
+				+ "  and (s.title_sort = ss.name or ss.name = '*')"
+				+ "  and ss.user_id = ?) "
+				+ " where lower(s.artist) = lower(?) "
+				+ "  and lower(s.title) = lower(?) "
+				+ "  and coalesce(ss.stick, 0) >= 0"
+				+ " order by coalesce(ss.stick, 0) desc, insert_timestamp desc ";
+		PreparedStatement sth = null;
+		try {
+			sth = DatabaseManager.getInstance().prepare(sql);
+			for (Track track : tracks) {
+				try {
+					sth.setLong(1, user.getId());
+					sth.setString(2, track.getArtist());
+					sth.setString(3, track.getName());
+					ResultSet rs = sth.executeQuery();
+					while (rs.next()) {
+						String file = rs.getString(1);
+						Integer size = rs.getInt(2);
+						Map<String, Object> song = new HashMap<String, Object>();
+						song.put("file", file);
+						song.put("size", size);
+						results.put(file, song);
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		} finally {
+			FinallyUtils.close(sth);
+		}
+
+		return results;
+	}
+
+	// public Collection<Artist> getRecommendedArtists(User user) {
+	//
+	// String lastfmUsername = DatabaseManager.getInstance().getSetting(user,
+	// "lastfmUsername");
+	//
+	// return de.umass.lastfm.User.getRecommendedArtists(lastfmUsername,
+	// LASTFM_API_KEY);
+	// }
 
 	public void started(String file) {
 		saveMetric(file, "s");
@@ -279,7 +450,7 @@ public class MetricManager {
 
 		return toQueue;
 	}
-	
+
 	public List getDownloadList(User user, Map song, int needed) {
 		return null;
 	}

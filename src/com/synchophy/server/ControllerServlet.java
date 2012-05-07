@@ -45,7 +45,7 @@ public class ControllerServlet extends HttpServlet {
 	}
 
 	public boolean isLoggedIn(String dispatchKey, HttpServletRequest request) {
-
+System.err.println(dispatchKey);
 		if (dispatchKey.equals("login") || dispatchKey.equals("register") || dispatchKey.equals("image")) {
 			return true;
 		}

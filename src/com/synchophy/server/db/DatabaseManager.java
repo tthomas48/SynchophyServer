@@ -179,18 +179,18 @@ public class DatabaseManager {
 		}
 	}
 
-	public List query(String sql) {
+	public List<Map<String, Object>> query(String sql) {
 
 		return query(sql, new Object[0]);
 
 	}
 
-	public List query(String sql, Object[] params) {
+	public List<Map<String, Object>> query(String sql, Object[] params) {
 
 		return query(sql, params, new String[0]);
 	}
 
-	public List query(String sql, Object[] params, String[] outputKeys) {
+	public List<Map<String, Object>> query(String sql, Object[] params, String[] outputKeys) {
 
 		try {
 			Connection c = getConnection();
@@ -272,6 +272,7 @@ public class DatabaseManager {
 	public void shutdown() {
 
 		close();
+		instance = null;
 	}
 
 	public static synchronized DatabaseManager getInstance() {
