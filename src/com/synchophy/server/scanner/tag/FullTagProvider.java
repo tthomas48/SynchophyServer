@@ -92,7 +92,9 @@ public class FullTagProvider implements ITagProvider {
 	}
 
 	public static String[] formats() {
-		return new String[] { "MP3", "M4A", "MP4", "MP4P", "OGG", "WMA" };
+		//return new String[] { "MP3", "M4A", "MP4", "MP4P", "OGG", "WMA" };
+		// currently only play mp3
+		return new String[] { "MP3" };
 	}
 
 	public boolean writeArt(String path) {

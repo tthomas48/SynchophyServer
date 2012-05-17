@@ -41,6 +41,7 @@ public class TaggedFile {
 			tag = (ITagProvider) tagConstructor
 					.newInstance(new Object[] { file });
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new RuntimeException("Unable to construct tag provider.", e);
 		}
 	}
